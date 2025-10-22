@@ -1,0 +1,49 @@
+# Core Data Science Libraries
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Geospatial Libraries
+geopandas>=0.14.0
+shapely>=2.0.0
+fiona>=1.9.0
+pyproj>=3.6.0
+rasterio>=1.3.0
+folium>=0.15.0
+
+# Database Libraries (NoSQL)
+pymongo>=4.6.0  # MongoDB
+psycopg2-binary>=2.9.9  # PostgreSQL
+# Alternative: pip install psycopg2 (requires build tools)
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.18.0
+
+# Jupyter
+jupyter>=1.0.0
+jupyterlab>=4.0.0
+ipykernel>=6.27.0
+
+# Data validation and quality
+pydantic>=2.5.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Configuration management
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Code quality
+black>=23.12.0
+flake8>=6.1.0
+isort>=5.13.0
+
+# Documentation
+sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0
