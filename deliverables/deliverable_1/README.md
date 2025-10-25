@@ -1,168 +1,168 @@
-# Deliverable 1: NoSQL Database Schema Design and Implementation Plan
+# Entregable 1: Diseño de Esquema de Base de Datos NoSQL y Plan de Implementación
 
-**Due Date:** October 27, 2025, 2:00 PM
-**Status:** ✅ Completed
-
----
-
-## Contents
-
-This deliverable contains:
-
-1. **[deliverable_1_report.md](deliverable_1_report.md)** - Complete technical report (60+ pages)
-   - Executive Summary
-   - Database Technology Selection (PostgreSQL + PostGIS)
-   - Data Modeling
-   - Schema Design
-   - Spatial Indexing Strategy
-   - Implementation Plan
-   - Justification and Conclusions
-   - References
-
-2. **SQL Scripts** (`sql_scripts/`)
-   - `01_create_schema.sql` - Complete database schema creation
-   - `02_useful_queries.sql` - Collection of useful analysis queries
-
-3. **Python Modules** (in `src/database/`)
-   - `connection.py` - Database connection module
-   - `__init__.py` - Package initialization
-
-4. **Configuration** (in `config/`)
-   - `database.yml` - Database configuration
-   - `.env.example` - Environment variables template
+**Fecha de Entrega:** 27 de Octubre de 2025, 2:00 PM
+**Estado:**  Completado
 
 ---
 
-## Key Decisions
+## Contenidos
 
-### Selected Technology: PostgreSQL 16 + PostGIS 3.4
+Este entregable contiene:
 
-**Why?**
-- ✅ Superior spatial functionality (1000+ functions vs 3 in MongoDB)
-- ✅ R-tree spatial indexing for optimal performance
-- ✅ Industry standard for GIS applications
-- ✅ Excellent Python integration (GeoPandas, psycopg2)
-- ✅ ACID compliance for reproducible analysis
+1. **[deliverable_1_report.md](deliverable_1_report.md)** - Reporte técnico completo (60+ páginas)
+   - Resumen Ejecutivo
+   - Selección de Tecnología de Base de Datos (PostgreSQL + PostGIS)
+   - Modelado de Datos
+   - Diseño de Esquema
+   - Estrategia de Indexación Espacial
+   - Plan de Implementación
+   - Justificación y Conclusiones
+   - Referencias
 
-### Data Model
+2. **Scripts SQL** (`sql_scripts/`)
+   - `01_create_schema.sql` - Creación completa del esquema de base de datos
+   - `02_useful_queries.sql` - Colección de consultas de análisis útiles
 
-We designed three main tables:
+3. **Módulos Python** (en `src/database/`)
+   - `connection.py` - Módulo de conexión a base de datos
+   - `__init__.py` - Inicialización de paquete
 
-1. **pdet_municipalities** - PDET territory boundaries (170 records)
-2. **buildings_microsoft** - Microsoft building footprints (~millions)
-3. **buildings_google** - Google building footprints (~millions)
+4. **Configuración** (en `config/`)
+   - `database.yml` - Configuración de base de datos
+   - `.env.example` - Plantilla de variables de entorno
 
-Plus materialized views for efficient aggregation:
+---
+
+## Decisiones Clave
+
+### Tecnología Seleccionada: PostgreSQL 16 + PostGIS 3.4
+
+**¿Por qué?**
+-  Funcionalidad espacial superior (1000+ funciones vs 3 en MongoDB)
+-  Indexación espacial R-tree para rendimiento óptimo
+-  Estándar de la industria para aplicaciones GIS
+-  Excelente integración con Python (GeoPandas, psycopg2)
+-  Cumplimiento ACID para análisis reproducible
+
+### Modelo de Datos
+
+Diseñamos tres tablas principales:
+
+1. **pdet_municipalities** - Límites territoriales PDET (170 registros)
+2. **buildings_microsoft** - Huellas de edificaciones Microsoft (~millones)
+3. **buildings_google** - Huellas de edificaciones Google (~millones)
+
+Más vistas materializadas para agregación eficiente:
 - `mv_municipality_stats_microsoft`
 - `mv_municipality_stats_google`
 - `mv_dataset_comparison`
 
-### Spatial Indexing
+### Indexación Espacial
 
-- **GiST R-tree** indexes on all geometry columns
-- **Optimized** for point-in-polygon queries (ST_Contains)
-- **Performance** O(log n) average case for spatial lookups
+- Índices **GiST R-tree** en todas las columnas de geometría
+- **Optimizado** para consultas punto-en-polígono (ST_Contains)
+- **Rendimiento** O(log n) caso promedio para búsquedas espaciales
 
 ---
 
-## Implementation Timeline
+## Cronograma de Implementación
 
-| Phase | Deliverable | Timeline | Status |
+| Fase | Entregable | Cronograma | Estado |
 |-------|------------|----------|---------|
-| **Phase 1** | Database setup & schema creation | Oct 23-24 | 📋 Planned |
-| **Phase 2** | PDET municipalities data loading | Oct 25-Nov 3 | ⏳ Next |
-| **Phase 3** | Building footprints data loading | Nov 4-10 | ⏳ Future |
-| **Phase 4** | Spatial analysis & aggregation | Nov 11-17 | ⏳ Future |
-| **Phase 5** | Final report & recommendations | Nov 18-24 | ⏳ Future |
+| **Fase 1** | Configuración de base de datos y creación de esquema | Oct 23-24 | 📋 Planificado |
+| **Fase 2** | Carga de datos de municipios PDET | Oct 25-Nov 3 | ⏳ Siguiente |
+| **Fase 3** | Carga de datos de huellas de edificaciones | Nov 4-10 | ⏳ Futuro |
+| **Fase 4** | Análisis espacial y agregación | Nov 11-17 | ⏳ Futuro |
+| **Fase 5** | Reporte final y recomendaciones | Nov 18-24 | ⏳ Futuro |
 
 ---
 
-## How to Use This Deliverable
+## Cómo Usar Este Entregable
 
-### 1. Review the Report
+### 1. Revisar el Reporte
 
-Read **[deliverable_1_report.md](deliverable_1_report.md)** for complete documentation.
+Lea **[deliverable_1_report.md](deliverable_1_report.md)** para documentación completa.
 
-### 2. Set Up Database (Phase 1)
+### 2. Configurar Base de Datos (Fase 1)
 
 ```bash
-# Install PostgreSQL 16 and PostGIS 3.4
+# Instalar PostgreSQL 16 y PostGIS 3.4
 
-# Create database
+# Crear base de datos
 createdb pdet_solar_analysis
 
-# Run schema creation script
+# Ejecutar script de creación de esquema
 psql -d pdet_solar_analysis -f sql_scripts/01_create_schema.sql
 
-# Configure environment
+# Configurar entorno
 cp ../../.env.example ../../.env
-# Edit .env and set DB_PASSWORD
+# Editar .env y establecer DB_PASSWORD
 
-# Test connection
+# Probar conexión
 cd ../..
 python src/database/connection.py
 ```
 
-### 3. Verify Setup
+### 3. Verificar Configuración
 
 ```bash
-# Run test queries
+# Ejecutar consultas de prueba
 psql -d pdet_solar_analysis -f sql_scripts/02_useful_queries.sql
 ```
 
 ---
 
-## Requirements Met
+## Requisitos Cumplidos
 
-### ✅ Implementation Plan
-- Detailed 5-phase implementation timeline
-- Resource requirements specified
-- Risk mitigation strategies documented
+###  Plan de Implementación
+- Cronograma detallado de implementación en 5 fases
+- Requisitos de recursos especificados
+- Estrategias de mitigación de riesgos documentadas
 
-### ✅ Data Modeling
-- Conceptual data model with entity relationships
-- Physical data model with complete DDL
-- Materialized views for performance
+###  Modelado de Datos
+- Modelo conceptual de datos con relaciones entre entidades
+- Modelo físico de datos con DDL completo
+- Vistas materializadas para rendimiento
 
-### ✅ Schema Design & Appropriateness
-- Justified technology selection (PostgreSQL+PostGIS)
-- Comprehensive schema with spatial indexing
-- Optimized for billion-scale datasets
-- Aligned with project requirements
+###  Diseño de Esquema y Apropiación
+- Selección de tecnología justificada (PostgreSQL+PostGIS)
+- Esquema integral con indexación espacial
+- Optimizado para conjuntos de datos de escala de miles de millones
+- Alineado con requisitos del proyecto
 
 ---
 
-## Files Structure
+## Estructura de Archivos
 
 ```
 deliverable_1/
-├── README.md                           # This file
-├── deliverable_1_report.md             # Main technical report
+├── README.md                           # Este archivo
+├── deliverable_1_report.md             # Reporte técnico principal
 └── sql_scripts/
-    ├── 01_create_schema.sql            # Database schema DDL
-    └── 02_useful_queries.sql           # Useful analysis queries
+    ├── 01_create_schema.sql            # DDL de esquema de base de datos
+    └── 02_useful_queries.sql           # Consultas de análisis útiles
 ```
 
 ---
 
-## Next Steps
+## Próximos Pasos
 
-1. **Review and Approval** - Present to team/instructor
-2. **Database Setup** - Implement Phase 1 (Oct 23-24)
-3. **Data Acquisition** - Download DANE, Microsoft, Google datasets
-4. **Deliverable 2** - PDET municipalities integration (Due Nov 3)
-
----
-
-## Team Notes
-
-- All SQL scripts are production-ready
-- Python modules are tested and documented
-- Configuration files follow best practices
-- No sensitive data committed to repository
+1. **Revisión y Aprobación** - Presentar al equipo/instructor
+2. **Configuración de Base de Datos** - Implementar Fase 1 (Oct 23-24)
+3. **Adquisición de Datos** - Descargar conjuntos de datos de DANE, Microsoft, Google
+4. **Entregable 2** - Integración de municipios PDET (Entrega Nov 3)
 
 ---
 
-**Prepared by:** [Your Team Name]
-**Submission Date:** October 22, 2025
-**Version:** 1.0
+## Notas del Equipo
+
+- Todos los scripts SQL están listos para producción
+- Los módulos Python están probados y documentados
+- Los archivos de configuración siguen las mejores prácticas
+- No se ha enviado información sensible al repositorio
+
+---
+
+**Preparado por:** Alejandro Pinzon 
+**Fecha de Envío:** 22 de Octubre de 2025
+**Versión:** 1.0

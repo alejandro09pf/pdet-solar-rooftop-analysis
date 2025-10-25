@@ -1,147 +1,147 @@
-# PDET Solar Rooftop Analysis
+# Análisis de Potencial Solar en Techos PDET
 
-## Database Administration - Final Project
+## Administración de Bases de Datos - Proyecto Final
 
-**Analyzing Solar Energy Potential on Building Rooftops in PDET Territories, Colombia**
+**Análisis del Potencial de Energía Solar en Techos de Edificaciones en Territorios PDET, Colombia**
 
-## Introduction
+## Introducción
 
-This project supports UPME's (Unidad de Planeación Minero Energética) objective of evaluating the feasibility of solar energy in selected territories across Colombia. The project designs and implements a reproducible geospatial analysis workflow to estimate the solar energy potential of building rooftops across prioritized municipalities, particularly in PDET (Programas de Desarrollo con Enfoque Territorial) territories.
+Este proyecto apoya el objetivo de la UPME (Unidad de Planeación Minero Energética) de evaluar la viabilidad de la energía solar en territorios seleccionados de Colombia. El proyecto diseña e implementa un flujo de trabajo de análisis geoespacial reproducible para estimar el potencial de energía solar de los techos de edificaciones en municipios priorizados, particularmente en territorios PDET (Programas de Desarrollo con Enfoque Territorial).
 
-PDET territories represent key focus areas for post-conflict development and infrastructure enhancement in Colombia. By leveraging openly available geospatial datasets containing billions of building outlines derived from high-resolution satellite imagery, this project aims to quantify potential energy-harvesting surfaces in urban and rural contexts.
+Los territorios PDET representan áreas clave de enfoque para el desarrollo posconflicto y la mejora de infraestructura en Colombia. Al aprovechar conjuntos de datos geoespaciales de acceso abierto que contienen miles de millones de contornos de edificaciones derivados de imágenes satelitales de alta resolución, este proyecto tiene como objetivo cuantificar las superficies potenciales para la captación de energía en contextos urbanos y rurales.
 
-## Objectives
+## Objetivos
 
-The primary goals of this project are:
+Los objetivos principales de este proyecto son:
 
-1. **Count buildings** within each PDET municipality
-2. **Estimate total rooftop area** suitable for solar panel installation
-3. **Compare outputs** from different open building datasets
-4. **Implement NoSQL solutions** for scalable storage and efficient spatial operations
-5. **Provide strategic recommendations** for proof-of-concept solar farm locations
+1. **Contar edificaciones** dentro de cada municipio PDET
+2. **Estimar el área total de techos** adecuada para instalación de paneles solares
+3. **Comparar resultados** de diferentes conjuntos de datos de edificaciones abiertas
+4. **Implementar soluciones NoSQL** para almacenamiento escalable y operaciones espaciales eficientes
+5. **Proporcionar recomendaciones estratégicas** para ubicaciones de granjas solares como prueba de concepto
 
-## Datasets
+## Conjuntos de Datos
 
-### Building Footprints
+### Huellas de Edificaciones
 
 1. **Microsoft Building Footprints**
-   - Over 999 million building detections from Bing Maps imagery (2014-2021)
-   - Sources: Maxar and Airbus
-   - License: Open Data Commons Open Database License (ODbL)
-   - [Dataset Information](https://planetarycomputer.microsoft.com/dataset/ms-buildings)
+   - Más de 999 millones de detecciones de edificaciones a partir de imágenes de Bing Maps (2014-2021)
+   - Fuentes: Maxar y Airbus
+   - Licencia: Open Data Commons Open Database License (ODbL)
+   - [Información del Conjunto de Datos](https://planetarycomputer.microsoft.com/dataset/ms-buildings)
 
 2. **Google Open Buildings**
-   - 1.8 billion building detections
-   - Coverage: 58 million km² (Africa, South Asia, Southeast Asia, Latin America, Caribbean)
-   - Version: 3
-   - License: CC BY-4.0 and ODbL v1.0
-   - [Dataset Information](https://sites.research.google/gr/open-buildings/)
+   - 1.8 mil millones de detecciones de edificaciones
+   - Cobertura: 58 millones km² (África, Asia del Sur, Sudeste Asiático, América Latina, Caribe)
+   - Versión: 3
+   - Licencia: CC BY-4.0 y ODbL v1.0
+   - [Información del Conjunto de Datos](https://sites.research.google/gr/open-buildings/)
 
-### Administrative Boundaries
+### Límites Administrativos
 
 - **DANE Marco Geoestadístico Nacional (MGN)**
-  - Colombian administrative boundaries at municipal level
-  - Focus on PDET-designated municipalities
+  - Límites administrativos colombianos a nivel municipal
+  - Enfoque en municipios designados PDET
   - [DANE Geoportal](https://geoportal.dane.gov.co/servicios/descarga-y-metadatos/datos-geoestadisticos/?cod=111)
 
-## Project Structure
+## Estructura del Proyecto
 
 ```
 pdet-solar-rooftop-analysis/
 ├── data/
-│   ├── raw/              # Original datasets (not tracked in git)
-│   └── processed/        # Cleaned and processed data
-├── src/                  # Source code and scripts
-├── notebooks/            # Jupyter notebooks for analysis
-├── docs/                 # Project documentation
-├── deliverables/         # Project deliverables by week
-├── results/              # Analysis results and visualizations
-├── config/               # Configuration files
+│   ├── raw/              # Conjuntos de datos originales (no rastreados en git)
+│   └── processed/        # Datos limpios y procesados
+├── src/                  # Código fuente y scripts
+├── notebooks/            # Notebooks de Jupyter para análisis
+├── docs/                 # Documentación del proyecto
+├── deliverables/         # Entregables del proyecto por semana
+├── results/              # Resultados de análisis y visualizaciones
+├── config/               # Archivos de configuración
 └── README.md
 ```
 
-## Deliverables Schedule
+## Cronograma de Entregables
 
-### Deliverable 1 - October 27, 2:00 PM
-**NoSQL Database Schema Design and Implementation Plan**
-- Implementation Plan
-- Data Modeling
-- Schema Design & Appropriateness
+### Entregable 1 - 27 de Octubre, 2:00 PM
+**Diseño de Esquema de Base de Datos NoSQL y Plan de Implementación**
+- Plan de Implementación
+- Modelado de Datos
+- Diseño de Esquema y Apropiación
 
-### Deliverable 2 - November 3, 2:00 PM
-**PDET Municipality Boundaries Dataset Integration**
-- Data Acquisition & Verification
-- Data Integrity & Format
-- NoSQL Spatial Integration
-- Documentation of Process
+### Entregable 2 - 3 de Noviembre, 2:00 PM
+**Integración del Conjunto de Datos de Límites Municipales PDET**
+- Adquisición y Verificación de Datos
+- Integridad y Formato de Datos
+- Integración Espacial NoSQL
+- Documentación del Proceso
 
-### Deliverable 3 - November 10, 2:00 PM
-**Building Footprint Data Loading and Integration Report**
-- Microsoft & Google Datasets Integration
-- Spatial Indexing
-- Data Loading Efficiency
-- Initial Data Audit (EDA)
+### Entregable 3 - 10 de Noviembre, 2:00 PM
+**Reporte de Carga e Integración de Datos de Huellas de Edificaciones**
+- Integración de Conjuntos de Datos de Microsoft y Google
+- Indexación Espacial
+- Eficiencia de Carga de Datos
+- Auditoría Inicial de Datos (EDA)
 
-### Deliverable 4 - November 17, 2:00 PM
-**Reproducible Geospatial Analysis Workflow**
-- Rooftop Count and Area Estimation
-- Reproducibility & Methodology
-- Accuracy of Spatial Operations
-- Output Data Structure (tables and maps)
+### Entregable 4 - 17 de Noviembre, 2:00 PM
+**Flujo de Trabajo de Análisis Geoespacial Reproducible**
+- Conteo de Techos y Estimación de Área
+- Reproducibilidad y Metodología
+- Precisión de Operaciones Espaciales
+- Estructura de Datos de Salida (tablas y mapas)
 
-### Deliverable 5 - November 24, 2:00 PM
-**Final Technical Report and Recommendations**
-- Complete Documentation
-- Results and Visualizations
-- Content & Completeness
-- Clarity of Recommendations
-- Alignment with UPME Objectives
+### Entregable 5 - 24 de Noviembre, 2:00 PM
+**Reporte Técnico Final y Recomendaciones**
+- Documentación Completa
+- Resultados y Visualizaciones
+- Contenido y Completitud
+- Claridad de las Recomendaciones
+- Alineación con los Objetivos de UPME
 
-## Technology Stack
+## Stack Tecnológico
 
-- **NoSQL Database**: TBD (MongoDB/PostgreSQL+PostGIS/etc.)
-- **Programming Language**: Python
-- **Geospatial Libraries**: GeoPandas, Shapely, Fiona, PyGEOS
-- **Data Processing**: Pandas, NumPy
-- **Visualization**: Matplotlib, Folium, Plotly
+- **Base de Datos NoSQL**: Por definir (MongoDB/PostgreSQL+PostGIS/etc.)
+- **Lenguaje de Programación**: Python
+- **Librerías Geoespaciales**: GeoPandas, Shapely, Fiona, PyGEOS
+- **Procesamiento de Datos**: Pandas, NumPy
+- **Visualización**: Matplotlib, Folium, Plotly
 
-## Getting Started
+## Primeros Pasos
 
-### Prerequisites
+### Prerrequisitos
 
 ```bash
 # Python 3.8+
 # Git
-# NoSQL Database (to be determined in Deliverable 1)
+# Base de Datos NoSQL (a determinar en Entregable 1)
 ```
 
-### Installation
+### Instalación
 
 ```bash
-# Clone the repository
+# Clonar el repositorio
 git clone <repository-url>
 cd pdet-solar-rooftop-analysis
 
-# Create virtual environment
+# Crear entorno virtual
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # En Windows: venv\Scripts\activate
 
-# Install dependencies (to be added)
+# Instalar dependencias (a agregar)
 pip install -r requirements.txt
 ```
 
-## License
+## Licencia
 
-This project is developed as part of an academic assignment for Database Administration course.
+Este proyecto se desarrolla como parte de una tarea académica para el curso de Administración de Bases de Datos.
 
-## Contributors
+## Colaboradores
 
-- [Team Members TBD]
+- Alejandro Pinzon Fajardo,
 
-## Contact
+## Contacto
 
-For questions regarding this project, please contact the project team or refer to the course instructor.
+Para preguntas sobre este proyecto, por favor contacte al equipo del proyecto o consulte al instructor del curso.
 
 ---
 
-**Note**: This project integrates modern data science tools with real-world energy policy needs, bridging technical innovation and strategic planning in support of Colombia's energy transition and territorial equity.
+**Nota**: Este proyecto integra herramientas modernas de ciencia de datos con necesidades reales de políticas energéticas, conectando la innovación técnica y la planeación estratégica en apoyo de la transición energética de Colombia y la equidad territorial.

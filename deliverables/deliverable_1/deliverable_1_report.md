@@ -1,436 +1,436 @@
-# Deliverable 1: NoSQL Database Schema Design and Implementation Plan
+# Entregable 1: Diseño de Esquema de Base de Datos NoSQL y Plan de Implementación
 
-**Project:** PDET Solar Rooftop Analysis
-**Date:** October 22, 2025
-**Team:** [Your Team Name]
-**Course:** Database Administration - Final Project
-
----
-
-## Table of Contents
-
-1. [Executive Summary](#executive-summary)
-2. [Database Technology Selection](#database-technology-selection)
-3. [Data Modeling](#data-modeling)
-4. [Schema Design](#schema-design)
-5. [Spatial Indexing Strategy](#spatial-indexing-strategy)
-6. [Implementation Plan](#implementation-plan)
-7. [Justification and Conclusions](#justification-and-conclusions)
-8. [References](#references)
+**Proyecto:** Análisis de Potencial Solar en Techos PDET
+**Fecha:** 22 de Octubre de 2025
+**Equipo:** Alejandro Pinzon Fajardo
+**Curso:** Administración de Bases de Datos - Proyecto Final
 
 ---
 
-## 1. Executive Summary
+## Tabla de Contenidos
 
-This document presents the database design and implementation plan for the PDET Solar Rooftop Analysis project. The primary objective is to design a NoSQL database solution capable of efficiently storing and querying billions of building footprints alongside Colombian administrative boundaries to estimate solar energy potential in PDET territories.
-
-### Key Decisions
-
-- **Selected Database:** PostgreSQL with PostGIS extension
-- **Rationale:** Superior spatial functionality, industry-standard for GIS applications, and excellent performance for complex spatial queries
-- **Data Volume:** ~1.8 billion building footprints + 170 PDET municipalities
-- **Primary Operations:** Spatial joins, area calculations, point-in-polygon queries
+1. [Resumen Ejecutivo](#resumen-ejecutivo)
+2. [Selección de Tecnología de Base de Datos](#selección-de-tecnología-de-base-de-datos)
+3. [Modelado de Datos](#modelado-de-datos)
+4. [Diseño de Esquema](#diseño-de-esquema)
+5. [Estrategia de Indexación Espacial](#estrategia-de-indexación-espacial)
+6. [Plan de Implementación](#plan-de-implementación)
+7. [Justificación y Conclusiones](#justificación-y-conclusiones)
+8. [Referencias](#referencias)
 
 ---
 
-## 2. Database Technology Selection
+## 1. Resumen Ejecutivo
 
-### 2.1 Requirements Analysis
+Este documento presenta el diseño de base de datos y el plan de implementación para el proyecto de Análisis de Potencial Solar en Techos PDET. El objetivo principal es diseñar una solución de base de datos NoSQL capaz de almacenar y consultar eficientemente miles de millones de huellas de edificaciones junto con límites administrativos colombianos para estimar el potencial de energía solar en territorios PDET.
 
-Our project requires a database system that can:
+### Decisiones Clave
 
-1. **Store large-scale geospatial data** (1.8+ billion building polygons)
-2. **Perform spatial operations** (intersections, containment, area calculations)
-3. **Support spatial indexing** for efficient queries
-4. **Handle heterogeneous data** (municipalities, buildings from different sources)
-5. **Enable reproducible analysis** with ACID properties
-6. **Integrate with Python** geospatial libraries (GeoPandas, Shapely)
+- **Base de Datos Seleccionada:** PostgreSQL con extensión PostGIS
+- **Justificación:** Funcionalidad espacial superior, estándar de la industria para aplicaciones GIS y excelente rendimiento para consultas espaciales complejas
+- **Volumen de Datos:** ~1.8 mil millones de huellas de edificaciones + 170 municipios PDET
+- **Operaciones Principales:** Uniones espaciales, cálculos de área, consultas punto-en-polígono
 
-### 2.2 Candidate Technologies
+---
 
-We evaluated four NoSQL/NewSQL database systems:
+## 2. Selección de Tecnología de Base de Datos
 
-| Database | Type | Spatial Support | Spatial Functions | Indexing |
+### 2.1 Análisis de Requisitos
+
+Nuestro proyecto requiere un sistema de base de datos que pueda:
+
+1. **Almacenar datos geoespaciales a gran escala** (1.8+ mil millones de polígonos de edificaciones)
+2. **Realizar operaciones espaciales** (intersecciones, contención, cálculos de área)
+3. **Soportar indexación espacial** para consultas eficientes
+4. **Manejar datos heterogéneos** (municipios, edificaciones de diferentes fuentes)
+5. **Habilitar análisis reproducible** con propiedades ACID
+6. **Integrarse con Python** y librerías geoespaciales (GeoPandas, Shapely)
+
+### 2.2 Tecnologías Candidatas
+
+Evaluamos cuatro sistemas de base de datos NoSQL/NewSQL:
+
+| Base de Datos | Tipo | Soporte Espacial | Funciones Espaciales | Indexación |
 |----------|------|-----------------|-------------------|----------|
-| **PostgreSQL + PostGIS** | Relational + Extension | Native | 1000+ functions | R-tree (GiST) |
-| **MongoDB** | Document | Native | 3 functions | Geohashing + B-tree |
-| **Cassandra + Spatial** | Wide-column | Plugin | Limited | Geohashing |
-| **Neo4j** | Graph | Plugin | Basic | Dynamic |
+| **PostgreSQL + PostGIS** | Relacional + Extensión | Nativo | 1000+ funciones | R-tree (GiST) |
+| **MongoDB** | Documento | Nativo | 3 funciones | Geohashing + B-tree |
+| **Cassandra + Espacial** | Columna-amplia | Plugin | Limitado | Geohashing |
+| **Neo4j** | Grafo | Plugin | Básico | Dinámico |
 
-### 2.3 Comparative Analysis
+### 2.3 Análisis Comparativo
 
 #### PostgreSQL + PostGIS
 
-**Pros:**
-- **Comprehensive spatial functionality:** Over 1,000 spatial functions (ST_Intersects, ST_Area, ST_Contains, etc.)
-- **Performance:** R-tree indexing (GiST) optimized for spatial queries
-- **Standards compliance:** Full OGC Simple Features specification
-- **Maturity:** 20+ years of development, industry standard for GIS
-- **Python integration:** Excellent support via psycopg2, SQLAlchemy, GeoPandas
-- **ACID compliance:** Ensures data integrity for reproducible analysis
-- **Advanced features:** Topology, rasters, 3D geometries, coordinate system transformations
+**Ventajas:**
+- **Funcionalidad espacial integral:** Más de 1,000 funciones espaciales (ST_Intersects, ST_Area, ST_Contains, etc.)
+- **Rendimiento:** Indexación R-tree (GiST) optimizada para consultas espaciales
+- **Cumplimiento de estándares:** Especificación completa OGC Simple Features
+- **Madurez:** 20+ años de desarrollo, estándar de la industria para GIS
+- **Integración con Python:** Excelente soporte vía psycopg2, SQLAlchemy, GeoPandas
+- **Cumplimiento ACID:** Garantiza integridad de datos para análisis reproducible
+- **Características avanzadas:** Topología, rásters, geometrías 3D, transformaciones de sistemas de coordenadas
 
-**Cons:**
-- Technically a relational database with NoSQL capabilities
-- More complex setup than pure document databases
-- Requires understanding of SQL and spatial SQL
+**Desventajas:**
+- Técnicamente una base de datos relacional con capacidades NoSQL
+- Configuración más compleja que bases de datos de documentos puras
+- Requiere comprensión de SQL y SQL espacial
 
-**Performance Benchmarks:**
-- Superior performance for polygon operations and complex spatial queries
-- Optimized for spatial joins (buildings within municipalities)
-- Excellent for aggregate queries (count, sum of areas per municipality)
+**Benchmarks de Rendimiento:**
+- Rendimiento superior para operaciones con polígonos y consultas espaciales complejas
+- Optimizado para uniones espaciales (edificaciones dentro de municipios)
+- Excelente para consultas de agregación (conteo, suma de áreas por municipio)
 
 #### MongoDB
 
-**Pros:**
-- **Developer-friendly:** JSON/BSON document model, flexible schema
-- **Horizontal scaling:** Built-in sharding for distributed deployments
-- **Simple setup:** Easy installation and configuration
-- **Good for basic queries:** Fast for radius and k-NN queries
-- **Native geospatial indexing:** 2dsphere index for spherical geometry
+**Ventajas:**
+- **Amigable para desarrolladores:** Modelo de documento JSON/BSON, esquema flexible
+- **Escalamiento horizontal:** Sharding incorporado para despliegues distribuidos
+- **Configuración simple:** Instalación y configuración fácil
+- **Bueno para consultas básicas:** Rápido para consultas de radio y k-NN
+- **Indexación geoespacial nativa:** Índice 2dsphere para geometría esférica
 
-**Cons:**
-- **Limited spatial functions:** Only 3 geospatial operators ($geoIntersects, $geoWithin, $near)
-- **Performance:** Slower for polygon operations compared to PostGIS
-- **No topology support:** Cannot handle complex spatial relationships
-- **Limited coordinate systems:** Primarily WGS84
-- **Indexing:** Geohashing with B-trees slower than R-trees for 2D spatial data
+**Desventajas:**
+- **Funciones espaciales limitadas:** Solo 3 operadores geoespaciales ($geoIntersects, $geoWithin, $near)
+- **Rendimiento:** Más lento para operaciones con polígonos comparado con PostGIS
+- **Sin soporte de topología:** No puede manejar relaciones espaciales complejas
+- **Sistemas de coordenadas limitados:** Principalmente WGS84
+- **Indexación:** Geohashing con B-trees más lento que R-trees para datos espaciales 2D
 
-**Use Cases:**
-- Best for simple location-based queries (find points near location)
-- Good for applications prioritizing flexibility over spatial functionality
+**Casos de Uso:**
+- Mejor para consultas simples basadas en ubicación (encontrar puntos cerca de una ubicación)
+- Bueno para aplicaciones que priorizan flexibilidad sobre funcionalidad espacial
 
-#### Apache Cassandra (with spatial extension)
+#### Apache Cassandra (con extensión espacial)
 
-**Pros:**
-- **High scalability:** Designed for massive distributed deployments
-- **High availability:** No single point of failure
-- **Write performance:** Optimized for write-heavy workloads
+**Ventajas:**
+- **Alta escalabilidad:** Diseñado para despliegues distribuidos masivos
+- **Alta disponibilidad:** Sin punto único de falla
+- **Rendimiento de escritura:** Optimizado para cargas de trabajo con escritura intensiva
 
-**Cons:**
-- **No native spatial support:** Requires third-party extensions
-- **Limited spatial functionality:** Basic operations only
-- **Complex queries are difficult:** Not optimized for joins or aggregations
-- **Immature spatial ecosystem:** Less community support for GIS use cases
+**Desventajas:**
+- **Sin soporte espacial nativo:** Requiere extensiones de terceros
+- **Funcionalidad espacial limitada:** Solo operaciones básicas
+- **Las consultas complejas son difíciles:** No optimizado para uniones o agregaciones
+- **Ecosistema espacial inmaduro:** Menos soporte comunitario para casos de uso GIS
 
-**Verdict:** Not suitable for our spatial analysis requirements
+**Veredicto:** No adecuado para nuestros requisitos de análisis espacial
 
-#### Neo4j (with spatial plugin)
+#### Neo4j (con plugin espacial)
 
-**Pros:**
-- **Graph relationships:** Excellent for modeling spatial networks
-- **Dynamic indexing:** Can add different spatial indexing schemes
+**Ventajas:**
+- **Relaciones de grafo:** Excelente para modelar redes espaciales
+- **Indexación dinámica:** Puede agregar diferentes esquemas de indexación espacial
 
-**Cons:**
-- **Not designed for raster/vector GIS:** Better for network topology
-- **Limited spatial functions:** Basic compared to PostGIS
-- **Overhead for simple spatial queries:** Graph model adds complexity
+**Desventajas:**
+- **No diseñado para GIS ráster/vector:** Mejor para topología de red
+- **Funciones espaciales limitadas:** Básicas comparadas con PostGIS
+- **Sobrecarga para consultas espaciales simples:** El modelo de grafo añade complejidad
 
-**Verdict:** Better suited for transportation networks, not building footprints
+**Veredicto:** Mejor adaptado para redes de transporte, no huellas de edificaciones
 
-### 2.4 Final Selection: PostgreSQL + PostGIS
+### 2.4 Selección Final: PostgreSQL + PostGIS
 
-**Decision:** We select **PostgreSQL 16 with PostGIS 3.4** as our database solution.
+**Decisión:** Seleccionamos **PostgreSQL 16 con PostGIS 3.4** como nuestra solución de base de datos.
 
-**Justification:**
+**Justificación:**
 
-1. **Functional Requirements Match:**
-   - Our core operation is spatial joins (buildings within municipality boundaries)
-   - PostGIS provides ST_Intersects, ST_Contains, ST_Area natively
-   - Need for coordinate transformations (WGS84 to projected CRS for area calculations)
+1. **Coincidencia con Requisitos Funcionales:**
+   - Nuestra operación central son las uniones espaciales (edificaciones dentro de límites municipales)
+   - PostGIS proporciona ST_Intersects, ST_Contains, ST_Area de forma nativa
+   - Necesidad de transformaciones de coordenadas (WGS84 a CRS proyectado para cálculos de área)
 
-2. **Performance:**
-   - Research shows PostGIS outperforms MongoDB for polygon operations
-   - R-tree spatial indexing optimal for our use case
-   - Efficient aggregation queries for municipality-level statistics
+2. **Rendimiento:**
+   - La investigación muestra que PostGIS supera a MongoDB para operaciones con polígonos
+   - Indexación espacial R-tree óptima para nuestro caso de uso
+   - Consultas de agregación eficientes para estadísticas a nivel municipal
 
-3. **Ecosystem:**
-   - GeoPandas has native PostGIS integration (`.to_postgis()`)
-   - QGIS and other GIS tools can directly connect
-   - Python libraries (psycopg2, GeoAlchemy2) are mature
+3. **Ecosistema:**
+   - GeoPandas tiene integración nativa con PostGIS (`.to_postgis()`)
+   - QGIS y otras herramientas GIS pueden conectarse directamente
+   - Las librerías Python (psycopg2, GeoAlchemy2) son maduras
 
-4. **Data Integrity:**
-   - ACID properties ensure reproducible analysis
-   - Transactions critical for multi-step data loading
-   - Constraints and validation at database level
+4. **Integridad de Datos:**
+   - Las propiedades ACID aseguran análisis reproducible
+   - Transacciones críticas para carga de datos en múltiples pasos
+   - Restricciones y validación a nivel de base de datos
 
-5. **Industry Standard:**
-   - Used by government agencies worldwide for GIS
-   - Extensive documentation and community support
-   - Aligns with UPME's modernization goals
+5. **Estándar de la Industria:**
+   - Usado por agencias gubernamentales en todo el mundo para GIS
+   - Documentación extensa y soporte comunitario
+   - Se alinea con los objetivos de modernización de la UPME
 
-**Note on "NoSQL" Classification:**
-While PostgreSQL is traditionally classified as a relational database, PostGIS extends it with capabilities that align with NoSQL characteristics:
-- **Schema flexibility:** JSONB columns for semi-structured metadata
-- **Spatial indexing:** Non-relational R-tree indexes
-- **Horizontal scaling:** Can be deployed with Citus extension for sharding
-- **Modern features:** Array types, full-text search, key-value storage
+**Nota sobre la Clasificación "NoSQL":**
+Aunque PostgreSQL se clasifica tradicionalmente como una base de datos relacional, PostGIS la extiende con capacidades que se alinean con características NoSQL:
+- **Flexibilidad de esquema:** Columnas JSONB para metadatos semi-estructurados
+- **Indexación espacial:** Índices R-tree no relacionales
+- **Escalamiento horizontal:** Puede desplegarse con la extensión Citus para sharding
+- **Características modernas:** Tipos de array, búsqueda de texto completo, almacenamiento clave-valor
 
-For this project, PostgreSQL+PostGIS satisfies the requirement for "NoSQL solutions" by providing flexible, scalable, modern data storage capabilities beyond traditional relational databases, specifically optimized for our geospatial use case.
+Para este proyecto, PostgreSQL+PostGIS satisface el requisito de "soluciones NoSQL" proporcionando capacidades de almacenamiento de datos flexibles, escalables y modernas más allá de las bases de datos relacionales tradicionales, específicamente optimizadas para nuestro caso de uso geoespacial.
 
 ---
 
-## 3. Data Modeling
+## 3. Modelado de Datos
 
-### 3.1 Conceptual Data Model
+### 3.1 Modelo Conceptual de Datos
 
-Our data model consists of three primary entities:
+Nuestro modelo de datos consiste en tres entidades principales:
 
 ```
 ┌─────────────────────┐
-│   PDET Municipalities│
-│  (170 records)      │
-│  - Admin boundaries │
-│  - Metadata         │
+│   Municipios PDET   │
+│  (170 registros)    │
+│  - Límites admin    │
+│  - Metadatos        │
 └──────────┬──────────┘
            │
-           │ spatial relationship
+           │ relación espacial
            │ (ST_Contains)
            ↓
 ┌─────────────────────┐      ┌─────────────────────┐
-│  Microsoft Buildings│      │  Google Buildings   │
-│  (~999M records)    │      │  (~1.8B records)    │
-│  - Footprint polygon│      │  - Footprint polygon│
-│  - Source metadata  │      │  - Confidence score │
+│  Edificaciones MS   │      │  Edificaciones GG   │
+│  (~999M registros)  │      │  (~1.8B registros)  │
+│  - Polígono huella  │      │  - Polígono huella  │
+│  - Metadatos fuente │      │  - Puntuación conf. │
 └─────────────────────┘      └─────────────────────┘
 ```
 
-### 3.2 Entity Descriptions
+### 3.2 Descripciones de Entidades
 
-#### 3.2.1 PDET Municipalities
+#### 3.2.1 Municipios PDET
 
-**Purpose:** Store administrative boundaries of PDET territories for spatial filtering.
+**Propósito:** Almacenar límites administrativos de territorios PDET para filtrado espacial.
 
-**Attributes:**
-- **Geometry:** Polygon or MultiPolygon (administrative boundary)
-- **Identifiers:** Municipality code (DIVIPOLA), department code
-- **Names:** Municipality name, department name
-- **PDET metadata:** PDET region, subregion
-- **Statistics:** Total area, population (optional for context)
+**Atributos:**
+- **Geometría:** Polygon o MultiPolygon (límite administrativo)
+- **Identificadores:** Código de municipio (DIVIPOLA), código de departamento
+- **Nombres:** Nombre de municipio, nombre de departamento
+- **Metadatos PDET:** Región PDET, subregión
+- **Estadísticas:** Área total, población (opcional para contexto)
 
-**Data Source:** DANE Marco Geoestadístico Nacional (MGN)
+**Fuente de Datos:** DANE Marco Geoestadístico Nacional (MGN)
 
-**Coordinate Reference System:** EPSG:4686 (MAGNA-SIRGAS) or EPSG:4326 (WGS84)
+**Sistema de Referencia de Coordenadas:** EPSG:4686 (MAGNA-SIRGAS) o EPSG:4326 (WGS84)
 
-#### 3.2.2 Microsoft Buildings
+#### 3.2.2 Edificaciones Microsoft
 
-**Purpose:** Store building footprints from Microsoft Global ML Building Footprints dataset.
+**Propósito:** Almacenar huellas de edificaciones del conjunto de datos Microsoft Global ML Building Footprints.
 
-**Attributes:**
-- **Geometry:** Polygon (building footprint)
-- **Area:** Pre-calculated area in square meters
-- **Source:** Dataset identifier
-- **Location:** Municipality code (foreign key, added during processing)
-- **Capture date:** Date range from source metadata
+**Atributos:**
+- **Geometría:** Polygon (huella de edificación)
+- **Área:** Área pre-calculada en metros cuadrados
+- **Fuente:** Identificador de conjunto de datos
+- **Ubicación:** Código de municipio (clave foránea, agregada durante procesamiento)
+- **Fecha de captura:** Rango de fechas de metadatos de fuente
 
-**Data Source:** Microsoft Bing Maps (2014-2024 imagery)
+**Fuente de Datos:** Microsoft Bing Maps (imágenes 2014-2024)
 
-**Format:** GeoJSON / GeoJSONL (`.csv.gz` compressed)
+**Formato:** GeoJSON / GeoJSONL (`.csv.gz` comprimido)
 
-**Volume:** ~999 million buildings globally; ~millions in Colombia
+**Volumen:** ~999 millones de edificaciones globalmente; ~millones en Colombia
 
-#### 3.2.3 Google Buildings
+#### 3.2.3 Edificaciones Google
 
-**Purpose:** Store building footprints from Google Open Buildings dataset.
+**Propósito:** Almacenar huellas de edificaciones del conjunto de datos Google Open Buildings.
 
-**Attributes:**
-- **Geometry:** Polygon or Point (building footprint)
-- **Area:** Pre-calculated area in square meters
-- **Confidence:** Confidence score (0-1) from ML model
-- **Source:** Dataset identifier
-- **Location:** Municipality code (foreign key, added during processing)
+**Atributos:**
+- **Geometría:** Polygon o Point (huella de edificación)
+- **Área:** Área pre-calculada en metros cuadrados
+- **Confianza:** Puntuación de confianza (0-1) del modelo ML
+- **Fuente:** Identificador de conjunto de datos
+- **Ubicación:** Código de municipio (clave foránea, agregada durante procesamiento)
 
-**Data Source:** Google Research (V3)
+**Fuente de Datos:** Google Research (V3)
 
-**Format:** CSV with WKT geometry
+**Formato:** CSV con geometría WKT
 
-**Volume:** ~1.8 billion buildings globally; coverage includes Latin America
+**Volumen:** ~1.8 mil millones de edificaciones globalmente; cobertura incluye América Latina
 
-### 3.3 Data Relationships
+### 3.3 Relaciones de Datos
 
-**Spatial Relationship:**
-- Buildings are spatially contained within municipality boundaries
-- Relationship established via spatial query: `ST_Contains(municipality.geom, building.geom)`
-- Not enforced via foreign key (too expensive); computed during analysis
+**Relación Espacial:**
+- Las edificaciones están contenidas espacialmente dentro de límites municipales
+- Relación establecida vía consulta espacial: `ST_Contains(municipality.geom, building.geom)`
+- No se aplica vía clave foránea (demasiado costoso); se calcula durante el análisis
 
-**Comparison Relationship:**
-- Microsoft and Google buildings are independent datasets
-- Same geographical area may have different building detections
-- Comparison done via spatial overlap analysis
+**Relación de Comparación:**
+- Las edificaciones de Microsoft y Google son conjuntos de datos independientes
+- La misma área geográfica puede tener diferentes detecciones de edificaciones
+- Comparación realizada vía análisis de superposición espacial
 
 ---
 
-## 4. Schema Design
+## 4. Diseño de Esquema
 
-### 4.1 Database Schema (PostgreSQL + PostGIS)
+### 4.1 Esquema de Base de Datos (PostgreSQL + PostGIS)
 
 ```sql
--- Enable PostGIS extension
+-- Habilitar extensión PostGIS
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 
--- Schema for organizing tables
+-- Esquema para organizar tablas
 CREATE SCHEMA IF NOT EXISTS pdet_solar;
 
--- Set search path
+-- Establecer ruta de búsqueda
 SET search_path TO pdet_solar, public;
 ```
 
-### 4.2 Table: pdet_municipalities
+### 4.2 Tabla: pdet_municipalities
 
 ```sql
--- Table for PDET municipality boundaries
+-- Tabla para límites municipales PDET
 CREATE TABLE pdet_municipalities (
-    -- Primary key
+    -- Clave primaria
     municipality_id SERIAL PRIMARY KEY,
 
-    -- Administrative codes (DIVIPOLA)
-    dept_code VARCHAR(2) NOT NULL,           -- Department code
-    muni_code VARCHAR(5) NOT NULL UNIQUE,    -- Municipality code (DIVIPOLA)
+    -- Códigos administrativos (DIVIPOLA)
+    dept_code VARCHAR(2) NOT NULL,           -- Código de departamento
+    muni_code VARCHAR(5) NOT NULL UNIQUE,    -- Código de municipio (DIVIPOLA)
 
-    -- Names
-    dept_name VARCHAR(100) NOT NULL,         -- Department name
-    muni_name VARCHAR(100) NOT NULL,         -- Municipality name
+    -- Nombres
+    dept_name VARCHAR(100) NOT NULL,         -- Nombre de departamento
+    muni_name VARCHAR(100) NOT NULL,         -- Nombre de municipio
 
-    -- PDET information
-    pdet_region VARCHAR(100),                -- PDET region name
-    pdet_subregion VARCHAR(100),             -- PDET subregion
+    -- Información PDET
+    pdet_region VARCHAR(100),                -- Nombre de región PDET
+    pdet_subregion VARCHAR(100),             -- Subregión PDET
 
-    -- Geometry (administrative boundary)
+    -- Geometría (límite administrativo)
     geom GEOMETRY(MultiPolygon, 4326) NOT NULL,
 
-    -- Calculated fields
-    area_km2 NUMERIC(12, 4),                 -- Area in square kilometers
+    -- Campos calculados
+    area_km2 NUMERIC(12, 4),                 -- Área en kilómetros cuadrados
 
-    -- Metadata
+    -- Metadatos
     data_source VARCHAR(50) DEFAULT 'DANE MGN',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    -- Constraints
+    -- Restricciones
     CONSTRAINT valid_geom CHECK (ST_IsValid(geom))
 );
 
--- Spatial index (most important!)
+-- Índice espacial (¡el más importante!)
 CREATE INDEX idx_pdet_muni_geom ON pdet_municipalities USING GIST (geom);
 
--- Regular indexes for queries
+-- Índices regulares para consultas
 CREATE INDEX idx_pdet_muni_code ON pdet_municipalities (muni_code);
 CREATE INDEX idx_pdet_dept_code ON pdet_municipalities (dept_code);
 CREATE INDEX idx_pdet_region ON pdet_municipalities (pdet_region);
 
--- Comments for documentation
-COMMENT ON TABLE pdet_municipalities IS 'PDET territory municipal boundaries from DANE MGN';
-COMMENT ON COLUMN pdet_municipalities.geom IS 'Administrative boundary in WGS84 (EPSG:4326)';
+-- Comentarios para documentación
+COMMENT ON TABLE pdet_municipalities IS 'Límites municipales de territorios PDET del DANE MGN';
+COMMENT ON COLUMN pdet_municipalities.geom IS 'Límite administrativo en WGS84 (EPSG:4326)';
 ```
 
-### 4.3 Table: buildings_microsoft
+### 4.3 Tabla: buildings_microsoft
 
 ```sql
--- Table for Microsoft building footprints
+-- Tabla para huellas de edificaciones Microsoft
 CREATE TABLE buildings_microsoft (
-    -- Primary key
+    -- Clave primaria
     building_id BIGSERIAL PRIMARY KEY,
 
-    -- Geometry (building footprint)
+    -- Geometría (huella de edificación)
     geom GEOMETRY(Polygon, 4326) NOT NULL,
 
-    -- Location (populated during spatial join)
+    -- Ubicación (poblada durante unión espacial)
     municipality_id INTEGER REFERENCES pdet_municipalities(municipality_id),
     muni_code VARCHAR(5),
 
-    -- Building attributes
-    area_m2 NUMERIC(10, 2),                  -- Area in square meters
+    -- Atributos de edificación
+    area_m2 NUMERIC(10, 2),                  -- Área en metros cuadrados
 
-    -- Source metadata
-    dataset_version VARCHAR(20),             -- e.g., "GlobalMLBuildingFootprints-2024"
-    confidence NUMERIC(3, 2),                -- Confidence score if available
+    -- Metadatos de fuente
+    dataset_version VARCHAR(20),             -- ej., "GlobalMLBuildingFootprints-2024"
+    confidence NUMERIC(3, 2),                -- Puntuación de confianza si está disponible
 
-    -- Metadata
+    -- Metadatos
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    -- Constraints
+    -- Restricciones
     CONSTRAINT valid_geom_ms CHECK (ST_IsValid(geom)),
     CONSTRAINT positive_area_ms CHECK (area_m2 > 0)
 );
 
--- Spatial index (CRITICAL for performance)
+-- Índice espacial (CRÍTICO para rendimiento)
 CREATE INDEX idx_buildings_ms_geom ON buildings_microsoft USING GIST (geom);
 
--- Indexes for filtering and joins
+-- Índices para filtrado y uniones
 CREATE INDEX idx_buildings_ms_muni ON buildings_microsoft (muni_code);
 CREATE INDEX idx_buildings_ms_area ON buildings_microsoft (area_m2);
 
--- Partial index for buildings not yet assigned to municipality
+-- Índice parcial para edificaciones aún no asignadas a municipio
 CREATE INDEX idx_buildings_ms_unassigned ON buildings_microsoft (building_id)
     WHERE municipality_id IS NULL;
 
--- Comments
-COMMENT ON TABLE buildings_microsoft IS 'Building footprints from Microsoft Global ML Building Footprints';
-COMMENT ON COLUMN buildings_microsoft.geom IS 'Building polygon in WGS84 (EPSG:4326)';
+-- Comentarios
+COMMENT ON TABLE buildings_microsoft IS 'Huellas de edificaciones de Microsoft Global ML Building Footprints';
+COMMENT ON COLUMN buildings_microsoft.geom IS 'Polígono de edificación en WGS84 (EPSG:4326)';
 ```
 
-### 4.4 Table: buildings_google
+### 4.4 Tabla: buildings_google
 
 ```sql
--- Table for Google Open Buildings
+-- Tabla para Google Open Buildings
 CREATE TABLE buildings_google (
-    -- Primary key
+    -- Clave primaria
     building_id BIGSERIAL PRIMARY KEY,
 
-    -- Geometry (building footprint - can be point or polygon)
-    geom GEOMETRY(Geometry, 4326) NOT NULL,  -- Geometry allows both Point and Polygon
-    geom_type VARCHAR(20),                    -- 'POINT' or 'POLYGON'
+    -- Geometría (huella de edificación - puede ser punto o polígono)
+    geom GEOMETRY(Geometry, 4326) NOT NULL,  -- Geometry permite tanto Point como Polygon
+    geom_type VARCHAR(20),                    -- 'POINT' o 'POLYGON'
 
-    -- Location (populated during spatial join)
+    -- Ubicación (poblada durante unión espacial)
     municipality_id INTEGER REFERENCES pdet_municipalities(municipality_id),
     muni_code VARCHAR(5),
 
-    -- Building attributes
-    area_m2 NUMERIC(10, 2),                  -- Area in square meters
-    confidence NUMERIC(3, 2),                -- ML model confidence (0-1)
+    -- Atributos de edificación
+    area_m2 NUMERIC(10, 2),                  -- Área en metros cuadrados
+    confidence NUMERIC(3, 2),                -- Confianza del modelo ML (0-1)
 
-    -- Original coordinates (for points)
+    -- Coordenadas originales (para puntos)
     latitude NUMERIC(10, 7),
     longitude NUMERIC(10, 7),
 
-    -- Source metadata
+    -- Metadatos de fuente
     dataset_version VARCHAR(20) DEFAULT 'v3',
 
-    -- Metadata
+    -- Metadatos
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    -- Constraints
+    -- Restricciones
     CONSTRAINT valid_geom_gg CHECK (ST_IsValid(geom)),
     CONSTRAINT positive_area_gg CHECK (area_m2 > 0 OR area_m2 IS NULL),
     CONSTRAINT valid_confidence CHECK (confidence BETWEEN 0 AND 1)
 );
 
--- Spatial index
+-- Índice espacial
 CREATE INDEX idx_buildings_gg_geom ON buildings_google USING GIST (geom);
 
--- Regular indexes
+-- Índices regulares
 CREATE INDEX idx_buildings_gg_muni ON buildings_google (muni_code);
 CREATE INDEX idx_buildings_gg_area ON buildings_google (area_m2);
 CREATE INDEX idx_buildings_gg_conf ON buildings_google (confidence);
 CREATE INDEX idx_buildings_gg_type ON buildings_google (geom_type);
 
--- Partial index for high-confidence buildings
+-- Índice parcial para edificaciones de alta confianza
 CREATE INDEX idx_buildings_gg_high_conf ON buildings_google (building_id)
     WHERE confidence >= 0.7;
 
--- Comments
-COMMENT ON TABLE buildings_google IS 'Building footprints from Google Open Buildings v3';
-COMMENT ON COLUMN buildings_google.geom IS 'Building geometry (point or polygon) in WGS84';
-COMMENT ON COLUMN buildings_google.confidence IS 'ML model confidence score (0-1)';
+-- Comentarios
+COMMENT ON TABLE buildings_google IS 'Huellas de edificaciones de Google Open Buildings v3';
+COMMENT ON COLUMN buildings_google.geom IS 'Geometría de edificación (punto o polígono) en WGS84';
+COMMENT ON COLUMN buildings_google.confidence IS 'Puntuación de confianza del modelo ML (0-1)';
 ```
 
-### 4.5 Materialized View: municipality_statistics
+### 4.5 Vista Materializada: municipality_statistics
 
-For efficient querying, we create materialized views with pre-aggregated statistics:
+Para consultas eficientes, creamos vistas materializadas con estadísticas pre-agregadas:
 
 ```sql
--- Materialized view for Microsoft buildings statistics
+-- Vista materializada para estadísticas de edificaciones Microsoft
 CREATE MATERIALIZED VIEW mv_municipality_stats_microsoft AS
 SELECT
     m.municipality_id,
@@ -448,10 +448,10 @@ FROM pdet_municipalities m
 LEFT JOIN buildings_microsoft b ON ST_Contains(m.geom, b.geom)
 GROUP BY m.municipality_id, m.muni_code, m.muni_name, m.dept_name, m.pdet_region;
 
--- Index on materialized view
+-- Índice en vista materializada
 CREATE INDEX idx_mv_stats_ms_muni ON mv_municipality_stats_microsoft (muni_code);
 
--- Materialized view for Google buildings statistics
+-- Vista materializada para estadísticas de edificaciones Google
 CREATE MATERIALIZED VIEW mv_municipality_stats_google AS
 SELECT
     m.municipality_id,
@@ -469,10 +469,10 @@ FROM pdet_municipalities m
 LEFT JOIN buildings_google b ON ST_Contains(m.geom, b.geom)
 GROUP BY m.municipality_id, m.muni_code, m.muni_name, m.dept_name, m.pdet_region;
 
--- Index on materialized view
+-- Índice en vista materializada
 CREATE INDEX idx_mv_stats_gg_muni ON mv_municipality_stats_google (muni_code);
 
--- Comparison view
+-- Vista de comparación
 CREATE MATERIALIZED VIEW mv_dataset_comparison AS
 SELECT
     m.municipality_id,
@@ -494,38 +494,38 @@ FROM pdet_municipalities m
 LEFT JOIN mv_municipality_stats_microsoft ms USING (municipality_id)
 LEFT JOIN mv_municipality_stats_google gg USING (municipality_id);
 
--- Comments
-COMMENT ON MATERIALIZED VIEW mv_municipality_stats_microsoft IS 'Pre-aggregated statistics for Microsoft buildings by municipality';
-COMMENT ON MATERIALIZED VIEW mv_municipality_stats_google IS 'Pre-aggregated statistics for Google buildings by municipality';
-COMMENT ON MATERIALIZED VIEW mv_dataset_comparison IS 'Comparison of Microsoft vs Google building counts and areas';
+-- Comentarios
+COMMENT ON MATERIALIZED VIEW mv_municipality_stats_microsoft IS 'Estadísticas pre-agregadas para edificaciones Microsoft por municipio';
+COMMENT ON MATERIALIZED VIEW mv_municipality_stats_google IS 'Estadísticas pre-agregadas para edificaciones Google por municipio';
+COMMENT ON MATERIALIZED VIEW mv_dataset_comparison IS 'Comparación de conteos y áreas de edificaciones Microsoft vs Google';
 ```
 
-### 4.6 Schema Optimization Features
+### 4.6 Características de Optimización de Esquema
 
-#### Partitioning Strategy (for very large datasets)
+#### Estrategia de Particionamiento (para conjuntos de datos muy grandes)
 
-If building tables become too large (billions of records), we can partition by municipality or geographic region:
+Si las tablas de edificaciones se vuelven demasiado grandes (miles de millones de registros), podemos particionar por municipio o región geográfica:
 
 ```sql
--- Example: Partition buildings_microsoft by department
+-- Ejemplo: Particionar buildings_microsoft por departamento
 CREATE TABLE buildings_microsoft_partitioned (
     LIKE buildings_microsoft INCLUDING ALL
 ) PARTITION BY LIST (dept_code);
 
--- Create partitions for major departments
+-- Crear particiones para departamentos principales
 CREATE TABLE buildings_microsoft_dept_05 PARTITION OF buildings_microsoft_partitioned
     FOR VALUES IN ('05');  -- Antioquia
 
 CREATE TABLE buildings_microsoft_dept_08 PARTITION OF buildings_microsoft_partitioned
     FOR VALUES IN ('08');  -- Atlántico
 
--- ... create partitions for other departments
+-- ... crear particiones para otros departamentos
 ```
 
-#### Vacuum and Analyze Strategy
+#### Estrategia de Vacuum y Analyze
 
 ```sql
--- Auto-vacuum settings for large tables
+-- Configuraciones de auto-vacuum para tablas grandes
 ALTER TABLE buildings_microsoft SET (
     autovacuum_vacuum_scale_factor = 0.05,
     autovacuum_analyze_scale_factor = 0.02
@@ -539,21 +539,21 @@ ALTER TABLE buildings_google SET (
 
 ---
 
-## 5. Spatial Indexing Strategy
+## 5. Estrategia de Indexación Espacial
 
-### 5.1 Spatial Index Overview
+### 5.1 Resumen de Índice Espacial
 
-PostGIS uses **R-tree** spatial indexing via PostgreSQL's **GiST (Generalized Search Tree)** index structure.
+PostGIS utiliza indexación espacial **R-tree** a través de la estructura de índice **GiST (Generalized Search Tree)** de PostgreSQL.
 
-**How R-trees work:**
-- Hierarchical structure grouping nearby geometric objects
-- Bounding boxes (MBRs - Minimum Bounding Rectangles) at each level
-- Optimal for 2D spatial queries (intersects, contains, overlaps)
-- Query time: O(log n) average case
+**Cómo funcionan los R-trees:**
+- Estructura jerárquica que agrupa objetos geométricos cercanos
+- Cajas envolventes (MBRs - Minimum Bounding Rectangles) en cada nivel
+- Óptimo para consultas espaciales 2D (intersects, contains, overlaps)
+- Tiempo de consulta: O(log n) caso promedio
 
-### 5.2 Index Configuration
+### 5.2 Configuración de Índices
 
-All geometry columns have GiST indexes:
+Todas las columnas de geometría tienen índices GiST:
 
 ```sql
 -- Primary spatial indexes (already defined above)
@@ -628,134 +628,134 @@ GROUP BY m.muni_name;
 
 ---
 
-## 6. Implementation Plan
+## 6. Plan de Implementación
 
-### 6.1 Timeline
+### 6.1 Cronograma
 
-| Phase | Deliverable | Timeline | Duration | Dependencies |
+| Fase | Entregable | Cronograma | Duración | Dependencias |
 |-------|------------|----------|----------|--------------|
-| **Phase 1** | Database setup & schema creation | Oct 23-24 | 2 days | This document |
-| **Phase 2** | PDET municipalities data loading | Oct 25-Nov 3 | 9 days | Phase 1 |
-| **Phase 3** | Building footprints data loading | Nov 4-10 | 7 days | Phase 2 |
-| **Phase 4** | Spatial analysis & aggregation | Nov 11-17 | 7 days | Phase 3 |
-| **Phase 5** | Final report & recommendations | Nov 18-24 | 7 days | Phase 4 |
+| **Fase 1** | Configuración de base de datos y creación de esquema | Oct 23-24 | 2 días | Este documento |
+| **Fase 2** | Carga de datos de municipios PDET | Oct 25-Nov 3 | 9 días | Fase 1 |
+| **Fase 3** | Carga de datos de huellas de edificaciones | Nov 4-10 | 7 días | Fase 2 |
+| **Fase 4** | Análisis espacial y agregación | Nov 11-17 | 7 días | Fase 3 |
+| **Fase 5** | Reporte final y recomendaciones | Nov 18-24 | 7 días | Fase 4 |
 
-### 6.2 Phase 1: Database Setup (Oct 23-24)
+### 6.2 Fase 1: Configuración de Base de Datos (Oct 23-24)
 
-**Objective:** Install PostgreSQL/PostGIS and create database schema.
+**Objetivo:** Instalar PostgreSQL/PostGIS y crear esquema de base de datos.
 
-**Tasks:**
-1. Install PostgreSQL 16 on local machine or cloud (AWS RDS, Google Cloud SQL, Azure Database)
-2. Install PostGIS 3.4 extension
-3. Create database: `pdet_solar_analysis`
-4. Create schema: `pdet_solar`
-5. Execute DDL scripts (CREATE TABLE statements from Section 4)
-6. Verify indexes created successfully
-7. Create initial materialized views
-8. Set up database connection in Python
+**Tareas:**
+1. Instalar PostgreSQL 16 en máquina local o nube (AWS RDS, Google Cloud SQL, Azure Database)
+2. Instalar extensión PostGIS 3.4
+3. Crear base de datos: `pdet_solar_analysis`
+4. Crear esquema: `pdet_solar`
+5. Ejecutar scripts DDL (sentencias CREATE TABLE de la Sección 4)
+6. Verificar que los índices se crearon exitosamente
+7. Crear vistas materializadas iniciales
+8. Configurar conexión a base de datos en Python
 
-**Deliverables:**
-- Running PostgreSQL instance
-- All tables and indexes created
-- Connection test script (`src/database/connection.py`)
+**Entregables:**
+- Instancia de PostgreSQL en ejecución
+- Todas las tablas e índices creados
+- Script de prueba de conexión (`src/database/connection.py`)
 
-**Testing:**
+**Pruebas:**
 ```sql
--- Verify PostGIS installation
+-- Verificar instalación de PostGIS
 SELECT PostGIS_Full_Version();
 
--- Check tables created
+-- Verificar tablas creadas
 SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'pdet_solar';
 
--- Verify spatial indexes
+-- Verificar índices espaciales
 SELECT indexname FROM pg_indexes
 WHERE schemaname = 'pdet_solar' AND indexdef LIKE '%USING gist%';
 ```
 
-### 6.3 Phase 2: PDET Municipalities Data Loading (Oct 25-Nov 3)
+### 6.3 Fase 2: Carga de Datos de Municipios PDET (Oct 25-Nov 3)
 
-**Objective:** Load and validate PDET municipality boundaries.
+**Objetivo:** Cargar y validar límites municipales PDET.
 
-**Tasks:**
-1. Download DANE MGN data (Shapefile format)
-2. Filter municipalities designated as PDET territories
-3. Validate geometries (fix invalid polygons if any)
-4. Transform to WGS84 (EPSG:4326) if needed
-5. Load into `pdet_municipalities` table
-6. Calculate area_km2 field
-7. Verify spatial index performance
-8. Create visualization map
+**Tareas:**
+1. Descargar datos del DANE MGN (formato Shapefile)
+2. Filtrar municipios designados como territorios PDET
+3. Validar geometrías (corregir polígonos inválidos si hay)
+4. Transformar a WGS84 (EPSG:4326) si es necesario
+5. Cargar en tabla `pdet_municipalities`
+6. Calcular campo area_km2
+7. Verificar rendimiento de índice espacial
+8. Crear mapa de visualización
 
-**Data Source:**
+**Fuente de Datos:**
 - DANE Geoportal: https://geoportal.dane.gov.co
-- PDET list: https://centralpdet.renovacionterritorio.gov.co
+- Lista PDET: https://centralpdet.renovacionterritorio.gov.co
 
 **Scripts:**
 - `src/data_loaders/dane_loader.py`
 - `notebooks/02_pdet_municipalities.ipynb`
 
-**Deliverables:**
-- 170 PDET municipalities loaded
-- Data quality report
-- Interactive map (Folium)
-- Documentation (Deliverable 2)
+**Entregables:**
+- 170 municipios PDET cargados
+- Reporte de calidad de datos
+- Mapa interactivo (Folium)
+- Documentación (Entregable 2)
 
-**Validation Queries:**
+**Consultas de Validación:**
 ```sql
--- Check record count
-SELECT COUNT(*) FROM pdet_municipalities;  -- Should be ~170
+-- Verificar conteo de registros
+SELECT COUNT(*) FROM pdet_municipalities;  -- Debería ser ~170
 
--- Check for invalid geometries
+-- Verificar geometrías inválidas
 SELECT muni_code, muni_name FROM pdet_municipalities
-WHERE NOT ST_IsValid(geom);  -- Should return 0 rows
+WHERE NOT ST_IsValid(geom);  -- Debería retornar 0 filas
 
--- Check CRS
-SELECT Find_SRID('pdet_solar', 'pdet_municipalities', 'geom');  -- Should be 4326
+-- Verificar CRS
+SELECT Find_SRID('pdet_solar', 'pdet_municipalities', 'geom');  -- Debería ser 4326
 
--- Check area calculation
+-- Verificar cálculo de área
 SELECT muni_name, area_km2 FROM pdet_municipalities ORDER BY area_km2 DESC LIMIT 10;
 ```
 
-### 6.4 Phase 3: Building Footprints Data Loading (Nov 4-10)
+### 6.4 Fase 3: Carga de Datos de Huellas de Edificaciones (Nov 4-10)
 
-**Objective:** Load Microsoft and Google building datasets for Colombia.
+**Objetivo:** Cargar conjuntos de datos de edificaciones de Microsoft y Google para Colombia.
 
-**Tasks:**
+**Tareas:**
 
-#### 3.1 Microsoft Buildings
-1. Download data from Microsoft Planetary Computer
-   - Filter for Colombia bounding box
-   - Download GeoJSON files
-2. Extract and decompress `.csv.gz` files
-3. Parse GeoJSONL format
-4. Filter buildings within or near PDET municipalities (bounding box pre-filter)
-5. Calculate area in m² (ST_Area with geography cast)
-6. Batch load into `buildings_microsoft` (use COPY for performance)
-7. Run spatial join to assign `municipality_id`
-8. Verify data quality
+#### 3.1 Edificaciones Microsoft
+1. Descargar datos de Microsoft Planetary Computer
+   - Filtrar por caja envolvente de Colombia
+   - Descargar archivos GeoJSON
+2. Extraer y descomprimir archivos `.csv.gz`
+3. Parsear formato GeoJSONL
+4. Filtrar edificaciones dentro o cerca de municipios PDET (pre-filtro de caja envolvente)
+5. Calcular área en m² (ST_Area con conversión a geography)
+6. Carga por lotes en `buildings_microsoft` (usar COPY para rendimiento)
+7. Ejecutar unión espacial para asignar `municipality_id`
+8. Verificar calidad de datos
 
-#### 3.2 Google Buildings
-1. Download data from Google Open Buildings
-   - Filter for Colombia (CSV format)
-2. Parse WKT geometry format
-3. Convert to PostGIS geometry
-4. Filter buildings within or near PDET municipalities
-5. Calculate area in m² for polygons
-6. Batch load into `buildings_google`
-7. Run spatial join to assign `municipality_id`
-8. Verify data quality
+#### 3.2 Edificaciones Google
+1. Descargar datos de Google Open Buildings
+   - Filtrar para Colombia (formato CSV)
+2. Parsear formato de geometría WKT
+3. Convertir a geometría PostGIS
+4. Filtrar edificaciones dentro o cerca de municipios PDET
+5. Calcular área en m² para polígonos
+6. Carga por lotes en `buildings_google`
+7. Ejecutar unión espacial para asignar `municipality_id`
+8. Verificar calidad de datos
 
 **Scripts:**
 - `src/data_loaders/microsoft_loader.py`
 - `src/data_loaders/google_loader.py`
 - `notebooks/03_building_data_loading.ipynb`
 
-**Optimization:**
-- Use bulk COPY instead of individual INSERTs
-- Disable indexes during bulk load, rebuild after
-- Use transactions for atomicity
-- Process in batches of 100k-1M records
+**Optimización:**
+- Usar COPY masivo en lugar de INSERTs individuales
+- Deshabilitar índices durante carga masiva, reconstruir después
+- Usar transacciones para atomicidad
+- Procesar en lotes de 100k-1M registros
 
 **Performance Considerations:**
 ```python
@@ -775,28 +775,28 @@ gdf.to_postgis('buildings_microsoft', engine, schema='pdet_solar',
                if_exists='append', index=False, chunksize=10000)
 ```
 
-**Deliverables:**
-- Buildings loaded for both datasets
-- Data loading efficiency report
-- Exploratory Data Analysis (EDA)
-- Data quality metrics
-- Documentation (Deliverable 3)
+**Entregables:**
+- Edificaciones cargadas para ambos conjuntos de datos
+- Reporte de eficiencia de carga de datos
+- Análisis Exploratorio de Datos (EDA)
+- Métricas de calidad de datos
+- Documentación (Entregable 3)
 
-**Validation Queries:**
+**Consultas de Validación:**
 ```sql
--- Check record counts
+-- Verificar conteos de registros
 SELECT 'Microsoft' AS source, COUNT(*) AS count FROM buildings_microsoft
 UNION ALL
 SELECT 'Google', COUNT(*) FROM buildings_google;
 
--- Check spatial assignment
+-- Verificar asignación espacial
 SELECT
     COUNT(*) AS total,
     COUNT(municipality_id) AS assigned,
     COUNT(*) - COUNT(municipality_id) AS unassigned
 FROM buildings_microsoft;
 
--- Check data distribution
+-- Verificar distribución de datos
 SELECT m.muni_name, COUNT(b.building_id) AS building_count
 FROM pdet_municipalities m
 LEFT JOIN buildings_microsoft b USING (municipality_id)
@@ -805,20 +805,20 @@ ORDER BY building_count DESC
 LIMIT 10;
 ```
 
-### 6.5 Phase 4: Spatial Analysis & Aggregation (Nov 11-17)
+### 6.5 Fase 4: Análisis Espacial y Agregación (Nov 11-17)
 
-**Objective:** Perform geospatial analysis to estimate rooftop areas.
+**Objetivo:** Realizar análisis geoespacial para estimar áreas de techos.
 
-**Tasks:**
-1. Refresh materialized views with aggregated statistics
-2. Run spatial join queries for municipality-level summaries
-3. Compare Microsoft vs Google building counts
-4. Calculate total rooftop area per municipality
-5. Identify top municipalities by solar potential
-6. Generate result tables (CSV exports)
-7. Create visualizations (choropleth maps, charts)
-8. Validate accuracy of spatial operations
-9. Document methodology for reproducibility
+**Tareas:**
+1. Refrescar vistas materializadas con estadísticas agregadas
+2. Ejecutar consultas de unión espacial para resúmenes a nivel municipal
+3. Comparar conteos de edificaciones Microsoft vs Google
+4. Calcular área total de techos por municipio
+5. Identificar municipios principales por potencial solar
+6. Generar tablas de resultados (exportaciones CSV)
+7. Crear visualizaciones (mapas de coropletas, gráficos)
+8. Validar precisión de operaciones espaciales
+9. Documentar metodología para reproducibilidad
 
 **Scripts:**
 - `src/analysis/spatial_join.py`
@@ -853,146 +853,146 @@ ORDER BY count_difference DESC
 LIMIT 20;
 ```
 
-**Deliverables:**
-- Municipality rankings by solar potential
-- Comparison tables (Microsoft vs Google)
-- Interactive maps (Folium/Plotly)
-- Statistical charts
-- Reproducible analysis notebooks
-- Documentation (Deliverable 4)
+**Entregables:**
+- Rankings de municipios por potencial solar
+- Tablas de comparación (Microsoft vs Google)
+- Mapas interactivos (Folium/Plotly)
+- Gráficos estadísticos
+- Notebooks de análisis reproducibles
+- Documentación (Entregable 4)
 
-### 6.6 Phase 5: Final Report (Nov 18-24)
+### 6.6 Fase 5: Reporte Final (Nov 18-24)
 
-**Objective:** Compile comprehensive technical report for UPME.
+**Objetivo:** Compilar reporte técnico integral para la UPME.
 
-**Tasks:**
-1. Synthesize all deliverables
-2. Write executive summary with key findings
-3. Document complete methodology
-4. Include all visualizations and tables
-5. Provide recommendations for UPME
-6. Create presentation slides
-7. Prepare code repository for submission
-8. Final review and proofreading
+**Tareas:**
+1. Sintetizar todos los entregables
+2. Escribir resumen ejecutivo con hallazgos clave
+3. Documentar metodología completa
+4. Incluir todas las visualizaciones y tablas
+5. Proporcionar recomendaciones para la UPME
+6. Crear diapositivas de presentación
+7. Preparar repositorio de código para envío
+8. Revisión final y corrección de pruebas
 
-**Deliverables:**
-- Final technical report (PDF)
-- Presentation slides (PowerPoint/PDF)
-- GitHub repository with all code
-- Documentation (Deliverable 5)
+**Entregables:**
+- Reporte técnico final (PDF)
+- Diapositivas de presentación (PowerPoint/PDF)
+- Repositorio GitHub con todo el código
+- Documentación (Entregable 5)
 
-### 6.7 Resource Requirements
+### 6.7 Requisitos de Recursos
 
 #### Hardware
-- **Development Machine:** 16GB RAM minimum, 50GB free disk space
-- **Database Server:**
-  - Option A: Local PostgreSQL instance
-  - Option B: Cloud database (AWS RDS, Google Cloud SQL)
-  - Recommended: 32GB RAM, 200GB SSD storage
+- **Máquina de Desarrollo:** 16GB RAM mínimo, 50GB de espacio libre en disco
+- **Servidor de Base de Datos:**
+  - Opción A: Instancia local de PostgreSQL
+  - Opción B: Base de datos en nube (AWS RDS, Google Cloud SQL)
+  - Recomendado: 32GB RAM, 200GB almacenamiento SSD
 
 #### Software
 - PostgreSQL 16+
 - PostGIS 3.4+
 - Python 3.9+
-- Libraries: pandas, geopandas, psycopg2, sqlalchemy, folium, matplotlib
+- Librerías: pandas, geopandas, psycopg2, sqlalchemy, folium, matplotlib
 
-#### Data Storage
-- Raw data: ~20-50 GB (compressed)
-- Processed data in database: ~100-200 GB (uncompressed)
-- Results and visualizations: ~1 GB
+#### Almacenamiento de Datos
+- Datos crudos: ~20-50 GB (comprimidos)
+- Datos procesados en base de datos: ~100-200 GB (sin comprimir)
+- Resultados y visualizaciones: ~1 GB
 
-### 6.8 Risk Mitigation
+### 6.8 Mitigación de Riesgos
 
-| Risk | Impact | Probability | Mitigation |
+| Riesgo | Impacto | Probabilidad | Mitigación |
 |------|--------|-------------|------------|
-| Dataset too large to download | High | Medium | Use filtered/sampled data or cloud processing |
-| Slow spatial queries | Medium | Medium | Optimize indexes, use materialized views |
-| Geometry validation errors | Medium | High | Pre-process with ST_MakeValid |
-| Insufficient disk space | High | Low | Monitor usage, use cloud storage |
-| Database crashes during load | Medium | Low | Use transactions, save checkpoints |
+| Conjunto de datos demasiado grande para descargar | Alto | Medio | Usar datos filtrados/muestreados o procesamiento en nube |
+| Consultas espaciales lentas | Medio | Medio | Optimizar índices, usar vistas materializadas |
+| Errores de validación de geometría | Medio | Alto | Pre-procesar con ST_MakeValid |
+| Espacio de disco insuficiente | Alto | Bajo | Monitorear uso, usar almacenamiento en nube |
+| Caídas de base de datos durante carga | Medio | Bajo | Usar transacciones, guardar puntos de control |
 
 ---
 
-## 7. Justification and Conclusions
+## 7. Justificación y Conclusiones
 
-### 7.1 Why This Design?
+### 7.1 ¿Por Qué Este Diseño?
 
-Our schema design addresses all project requirements:
+Nuestro diseño de esquema aborda todos los requisitos del proyecto:
 
-1. **NoSQL Requirement:** PostgreSQL+PostGIS provides modern, flexible data storage with spatial capabilities beyond traditional relational databases.
+1. **Requisito NoSQL:** PostgreSQL+PostGIS proporciona almacenamiento de datos moderno y flexible con capacidades espaciales más allá de las bases de datos relacionales tradicionales.
 
-2. **Scalability:** Can handle 1.8+ billion building records with proper indexing and partitioning.
+2. **Escalabilidad:** Puede manejar 1.8+ mil millones de registros de edificaciones con indexación y particionamiento adecuados.
 
-3. **Performance:** R-tree spatial indexes ensure efficient spatial queries (O(log n) complexity).
+3. **Rendimiento:** Los índices espaciales R-tree aseguran consultas espaciales eficientes (complejidad O(log n)).
 
-4. **Functionality:** 1000+ PostGIS functions enable comprehensive spatial analysis.
+4. **Funcionalidad:** 1000+ funciones de PostGIS permiten análisis espacial integral.
 
-5. **Reproducibility:** ACID properties and SQL-based workflow ensure reproducible results.
+5. **Reproducibilidad:** Propiedades ACID y flujo de trabajo basado en SQL aseguran resultados reproducibles.
 
-6. **Integration:** Native support in Python geospatial ecosystem (GeoPandas, QGIS).
+6. **Integración:** Soporte nativo en el ecosistema geoespacial de Python (GeoPandas, QGIS).
 
-7. **Extensibility:** Easy to add new datasets or modify schema as requirements evolve.
+7. **Extensibilidad:** Fácil agregar nuevos conjuntos de datos o modificar esquema a medida que evolucionan los requisitos.
 
-### 7.2 Expected Outcomes
+### 7.2 Resultados Esperados
 
-Upon completion of implementation:
+Al completar la implementación:
 
-- **Database:** Fully operational PostgreSQL+PostGIS instance with 170 municipalities and millions of building footprints
-- **Analysis:** Municipality-level statistics on building counts and total rooftop areas
-- **Comparison:** Quantitative comparison of Microsoft vs Google datasets
-- **Recommendations:** Data-driven recommendations for UPME on municipalities with highest solar potential
-- **Reproducibility:** Complete codebase and documentation for reproducing analysis
+- **Base de Datos:** Instancia PostgreSQL+PostGIS completamente operacional con 170 municipios y millones de huellas de edificaciones
+- **Análisis:** Estadísticas a nivel municipal sobre conteos de edificaciones y áreas totales de techos
+- **Comparación:** Comparación cuantitativa de conjuntos de datos Microsoft vs Google
+- **Recomendaciones:** Recomendaciones basadas en datos para la UPME sobre municipios con mayor potencial solar
+- **Reproducibilidad:** Base de código completa y documentación para reproducir el análisis
 
-### 7.3 Alignment with UPME Objectives
+### 7.3 Alineación con Objetivos de la UPME
 
-This design directly supports UPME's goals:
+Este diseño apoya directamente los objetivos de la UPME:
 
-- **Strategic Planning:** Identifies municipalities with greatest solar energy potential
-- **Data-Driven Decisions:** Quantitative metrics for proof-of-concept site selection
-- **Transparency:** Open-source tools and datasets enable independent verification
-- **Scalability:** Methodology can extend to all Colombian municipalities
-- **Modern Infrastructure:** Aligns with UPME's technology modernization initiatives
+- **Planeación Estratégica:** Identifica municipios con mayor potencial de energía solar
+- **Decisiones Basadas en Datos:** Métricas cuantitativas para selección de sitios de prueba de concepto
+- **Transparencia:** Herramientas de código abierto y conjuntos de datos permiten verificación independiente
+- **Escalabilidad:** La metodología puede extenderse a todos los municipios colombianos
+- **Infraestructura Moderna:** Se alinea con las iniciativas de modernización tecnológica de la UPME
 
-### 7.4 Next Steps
+### 7.4 Próximos Pasos
 
-1. **Review and approval:** Present this design to team/instructor for feedback
-2. **Database setup:** Implement Phase 1 (Oct 23-24)
-3. **Data acquisition:** Download DANE, Microsoft, and Google datasets
-4. **Proceed with Deliverable 2:** PDET municipalities integration (due Nov 3)
+1. **Revisión y aprobación:** Presentar este diseño al equipo/instructor para retroalimentación
+2. **Configuración de base de datos:** Implementar Fase 1 (Oct 23-24)
+3. **Adquisición de datos:** Descargar conjuntos de datos de DANE, Microsoft y Google
+4. **Proceder con Entregable 2:** Integración de municipios PDET (entrega Nov 3)
 
 ---
 
-## 8. References
+## 8. Referencias
 
-### Academic Literature
+### Literatura Académica
 1. **Performance analysis of MongoDB versus PostGIS/PostGreSQL databases for line intersection and point containment spatial queries.** Spatial Information Research (2016). https://doi.org/10.1007/s41324-016-0059-1
 
 2. **MongoDB Vs PostgreSQL: A comparative study on performance aspects.** GeoInformatica (2020). https://doi.org/10.1007/s10707-020-00407-w
 
 3. **The Comparison of Processing Efficiency of Spatial Data for PostGIS and MongoDB Databases.** ResearchGate (2019).
 
-### Datasets
+### Conjuntos de Datos
 4. **Microsoft Global ML Building Footprints.** Microsoft Bing Maps. https://github.com/microsoft/GlobalMLBuildingFootprints
 
 5. **Google Open Buildings v3.** Google Research. https://sites.research.google/gr/open-buildings/
 
 6. **Marco Geoestadístico Nacional (MGN).** DANE Colombia. https://geoportal.dane.gov.co
 
-### Technical Documentation
+### Documentación Técnica
 7. **PostGIS Documentation.** PostGIS 3.4 Manual. https://postgis.net/docs/
 
 8. **PostgreSQL Documentation.** PostgreSQL 16 Documentation. https://www.postgresql.org/docs/16/
 
 9. **GeoPandas Documentation.** https://geopandas.org/
 
-### Standards
+### Estándares
 10. **OGC Simple Features Specification.** Open Geospatial Consortium. https://www.ogc.org/standards/sfa
 
 ---
 
-## Appendix A: Database Connection Configuration
+## Apéndice A: Configuración de Conexión a Base de Datos
 
-**File:** `config/database.yml`
+**Archivo:** `config/database.yml`
 
 ```yaml
 database:
@@ -1001,7 +1001,7 @@ database:
   database: pdet_solar_analysis
   schema: pdet_solar
   user: pdet_user
-  # Password should be in .env file, not committed to git
+  # La contraseña debe estar en archivo .env, no comprometida en git
 
 connection_pool:
   min_size: 2
@@ -1012,13 +1012,13 @@ spatial:
   colombia_srid: 3116  # MAGNA-SIRGAS Colombia
 ```
 
-**File:** `.env.example`
+**Archivo:** `.env.example`
 
 ```bash
-# Database credentials
-DB_PASSWORD=your_secure_password_here
+# Credenciales de base de datos
+DB_PASSWORD=tu_contraseña_segura_aquí
 
-# Data paths
+# Rutas de datos
 DATA_RAW_PATH=./data/raw
 DATA_PROCESSED_PATH=./data/processed
 RESULTS_PATH=./results
@@ -1026,14 +1026,14 @@ RESULTS_PATH=./results
 
 ---
 
-## Appendix B: Sample Python Connection Code
+## Apéndice B: Código Python de Ejemplo para Conexión
 
-**File:** `src/database/connection.py`
+**Archivo:** `src/database/connection.py`
 
 ```python
 """
-Database connection module for PDET Solar Analysis project.
-Handles PostgreSQL/PostGIS connections.
+Módulo de conexión a base de datos para el proyecto de Análisis Solar PDET.
+Maneja conexiones PostgreSQL/PostGIS.
 """
 
 import os
@@ -1042,19 +1042,19 @@ from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 import yaml
 
-# Load environment variables
+# Cargar variables de entorno
 load_dotenv()
 
-# Load database configuration
+# Cargar configuración de base de datos
 with open('config/database.yml', 'r') as f:
     config = yaml.safe_load(f)
 
 def get_connection_string():
     """
-    Generate PostgreSQL connection string from config.
+    Generar cadena de conexión PostgreSQL desde configuración.
 
     Returns:
-        str: SQLAlchemy connection string
+        str: Cadena de conexión SQLAlchemy
     """
     db_config = config['database']
     password = os.getenv('DB_PASSWORD')
@@ -1065,13 +1065,13 @@ def get_connection_string():
 
 def create_db_engine(echo=False):
     """
-    Create SQLAlchemy engine for database connections.
+    Crear motor SQLAlchemy para conexiones a base de datos.
 
     Args:
-        echo (bool): Whether to echo SQL statements (for debugging)
+        echo (bool): Si se deben mostrar sentencias SQL (para depuración)
 
     Returns:
-        sqlalchemy.engine.Engine: Database engine
+        sqlalchemy.engine.Engine: Motor de base de datos
     """
     conn_string = get_connection_string()
     engine = create_engine(
@@ -1084,47 +1084,47 @@ def create_db_engine(echo=False):
 
 def test_connection():
     """
-    Test database connection and PostGIS installation.
+    Probar conexión a base de datos e instalación de PostGIS.
 
     Returns:
-        bool: True if connection successful
+        bool: True si la conexión fue exitosa
     """
     try:
         engine = create_db_engine()
         with engine.connect() as conn:
-            # Test PostGIS
+            # Probar PostGIS
             result = conn.execute("SELECT PostGIS_Version();")
             version = result.fetchone()[0]
-            print(f"✓ Connected to PostgreSQL")
-            print(f"✓ PostGIS version: {version}")
+            print(f"✓ Conectado a PostgreSQL")
+            print(f"✓ Versión de PostGIS: {version}")
 
-            # Test schema
+            # Probar esquema
             result = conn.execute(
                 f"SELECT schema_name FROM information_schema.schemata "
                 f"WHERE schema_name = '{config['database']['schema']}';"
             )
             if result.fetchone():
-                print(f"✓ Schema '{config['database']['schema']}' exists")
+                print(f"✓ Esquema '{config['database']['schema']}' existe")
             else:
-                print(f"✗ Schema '{config['database']['schema']}' not found")
+                print(f"✗ Esquema '{config['database']['schema']}' no encontrado")
                 return False
 
         return True
     except Exception as e:
-        print(f"✗ Connection failed: {e}")
+        print(f"✗ Conexión fallida: {e}")
         return False
 
 if __name__ == "__main__":
-    # Test connection when script is run directly
+    # Probar conexión cuando el script se ejecuta directamente
     test_connection()
 ```
 
 ---
 
-**End of Deliverable 1 Report**
+**Fin del Reporte del Entregable 1**
 
 ---
 
-**Prepared by:** [Your Team Name]
-**Date:** October 22, 2025
-**Version:** 1.0
+**Preparado por:** Alejandro Pinzon Fajardo
+**Fecha:** 22 de Octubre de 2025
+**Versión:** 1.0
