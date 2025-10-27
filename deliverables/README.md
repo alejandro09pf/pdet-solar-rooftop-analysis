@@ -1,102 +1,102 @@
-# Deliverables Tracking
+# Seguimiento de Entregables
 
-## Overview
+## Descripción General
 
-This directory contains all project deliverables submitted according to the project timeline.
+Este directorio contiene todos los entregables del proyecto presentados de acuerdo con el cronograma del proyecto.
 
-## Deliverables Schedule
+## Cronograma de Entregables
 
-### Deliverable 1: NoSQL Database Schema Design and Implementation Plan
-**Due: October 27, 2:00 PM**
+### Entregable 1: Diseño de Esquema de Base de Datos NoSQL y Plan de Implementación
+**Entrega: 27 de octubre, 2:00 PM**
 
-**Requirements:**
-- [ ] Implementation Plan
-- [ ] Data Modeling
-- [ ] Schema Design & Appropriateness
+**Requisitos:**
+- [ ] Plan de Implementación
+- [ ] Modelado de Datos
+- [ ] Diseño del Esquema y Pertinencia
+      
+**Estado:** No Iniciado
 
-**Status:** Not Started
-
-**Submitted:** [ ]
-
----
-
-### Deliverable 2: PDET Municipality Boundaries Dataset Integration
-**Due: November 3, 2:00 PM**
-
-**Requirements:**
-- [ ] Data Acquisition & Verification
-- [ ] Data Integrity & Format
-- [ ] NoSQL Spatial Integration
-- [ ] Documentation of Process
-
-**Status:** Not Started
-
-**Submitted:** [ ]
+**Entregado:** [ ]
 
 ---
 
-### Deliverable 3: Building Footprint Data Loading and Integration Report
-**Due: November 10, 2:00 PM**
+### Entregable 2: Integración del Conjunto de Datos de Límites Municipales PDET
+**Entrega: 3 de noviembre, 2:00 PM**
 
-**Requirements:**
-- [ ] Microsoft & Google Datasets Integration
-- [ ] Spatial Indexing
-- [ ] Data Loading Efficiency
-- [ ] Initial Data Audit (EDA)
+**Requisitos:**
+- [ ] Adquisición y Verificación de Datos
+- [ ] Integridad y Formato de los Datos
+- [ ] Integración Espacial en NoSQL
+- [ ] Documentación del Proceso
 
-**Status:** Not Started
+**Estado:** No Iniciado
 
-**Submitted:** [ ]
-
----
-
-### Deliverable 4: Reproducible Geospatial Analysis Workflow
-**Due: November 17, 2:00 PM**
-
-**Requirements:**
-- [ ] Rooftop Count and Area Estimation
-- [ ] Reproducibility & Methodology
-- [ ] Accuracy of Spatial Operations
-- [ ] Output Data Structure (tables and maps)
-
-**Status:** Not Started
-
-**Submitted:** [ ]
+**Entregado:** [ ]
 
 ---
 
-### Deliverable 5: Final Technical Report and Recommendations
-**Due: November 24, 2:00 PM**
+### Entregable 3: Carga e Integración de Datos de Huellas de Edificaciones (Informe)
+**Entrega: 10 de noviembre, 2:00 PM**
 
-**Requirements:**
-- [ ] Documentation of the whole process
-- [ ] Results and data visualizations
-- [ ] Content & Completeness
-- [ ] Clarity of Recommendations
-- [ ] Alignment with UPME Objectives
+**Requisitos:**
+- [ ] Integración de Conjuntos de Datos de Microsoft y Google
+- [ ] Indexación Espacial
+- [ ] Eficiencia en la Carga de Datos
+- [ ] Auditoría Inicial de Datos (EDA)
 
-**Status:** Not Started
+**Estado:** No Iniciado
 
-**Submitted:** [ ]
+**Entregado:** [ ]
 
 ---
 
-## Submission Process
+### Entregable 4: Flujo de Trabajo Reproducible para Análisis Geoespacial
+**Entrega: Noviembre 17, 2:00 PM**
 
-1. Complete all requirements for the deliverable
-2. Create deliverable document in this directory (e.g., `deliverable_1.md` or `deliverable_1.pdf`)
-3. Update the checklist above
-4. Commit and push to GitHub
-5. Mark as submitted and note submission date
+**Requisitos:**
+- [ ] Conteo de Techos y Estimación de Áreas
+- [ ] Reproducibilidad y Metodología
+- [ ] Precisión de las Operaciones Espaciales
+- [ ] Estructura de Salida de Datos (tablas y mapas)
 
-## Directory Structure
+**Estado:** No Iniciado
+
+**Entregado:** [ ]
+
+---
+
+### Entregable 5: Informe Técnico Final y Recomendaciones
+**Entrega: Noviembre 24, 2:00 PM**
+
+**Requisitos:**
+- [ ] Documentación de todo el proceso
+- [ ] Resultados y Visualizaciones de Datos
+- [ ] Contenido y Completitud
+- [ ] Claridad de las Recomendaciones
+- [ ] Alineación con los Objetivos de la UPME
+
+**Estado:** No Iniciado
+
+**Entregado:** [ ]
+
+---
+
+## Proceso de Entrega
+
+1. Completar todos los requisitos del entregable
+2. Crear el documento del entregable en este directorio (por ejemplo, `deliverable_1.md` o `deliverable_1.pdf`)
+3. Actualizar la lista de verificación anterior
+4. Realizar commit y push en GitHub
+5. Marcar como entregado y anotar la fecha de entrega
+
+## Estructura del Directorio
 
 ```
 deliverables/
-├── README.md              # This file
-├── deliverable_1/         # Deliverable 1 files
-├── deliverable_2/         # Deliverable 2 files
-├── deliverable_3/         # Deliverable 3 files
-├── deliverable_4/         # Deliverable 4 files
-└── deliverable_5/         # Deliverable 5 files (Final Report)
+├── README.md              # Este archivo
+├── deliverable_1/         # Archivos del Entregable 1 
+├── deliverable_2/         # Archivos del Entregable 2 
+├── deliverable_3/         # Archivos del Entregable 3 
+├── deliverable_4/         # Archivos del Entregable 4 
+└── deliverable_5/         # Archivos del Entregable 5  (Reporte Final)
 ```
