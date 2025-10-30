@@ -2,7 +2,7 @@
 
 **Proyecto:** Análisis de Potencial Solar en Techos PDET
 **Fecha:** 22 de Octubre de 2025
-**Equipo:** Alejandro Pinzon Fajardo
+**Equipo:** Alejandro Pinzon Fajardo, Juan Jose Bermudez
 **Curso:** Administración de Bases de Datos - Proyecto Final
 
 ---
@@ -22,14 +22,14 @@
 
 ## 1. Resumen Ejecutivo
 
-Este documento presenta el diseño de base de datos y el plan de implementación para el proyecto de Análisis de Potencial Solar en Techos PDET. El objetivo principal es diseñar una solución de base de datos NoSQL capaz de almacenar y consultar eficientemente miles de millones de huellas de edificaciones junto con límites administrativos colombianos para estimar el potencial de energía solar en territorios PDET.
+Este documento presenta el diseño de base de datos y el plan de implementación para el proyecto **Análisis de Potencial Solar en Techos PDET**, con el objetivo de diseñar una solución **NoSQL con MongoDB** capaz de almacenar y consultar eficientemente millones de huellas de edificaciones junto con límites administrativos colombianos, para estimar el potencial de energía solar en los territorios PDET.
 
 ### Decisiones Clave
 
-- **Base de Datos Seleccionada:** PostgreSQL con extensión PostGIS
-- **Justificación:** Funcionalidad espacial superior, estándar de la industria para aplicaciones GIS y excelente rendimiento para consultas espaciales complejas
-- **Volumen de Datos:** ~1.8 mil millones de huellas de edificaciones + 170 municipios PDET
-- **Operaciones Principales:** Uniones espaciales, cálculos de área, consultas punto-en-polígono
+- **Base de Datos Seleccionada:** MongoDB  
+- **Justificación:** Escalabilidad horizontal, soporte nativo de datos geoespaciales, esquema flexible y facilidad de integración con herramientas modernas de análisis.  
+- **Volumen de Datos:** ~1.8 mil millones de huellas de edificaciones + 170 municipios PDET.  
+- **Operaciones Principales:** Consultas espaciales ($geoWithin, $geoIntersects), cálculos de área, y análisis geoespacial distribuido.
 
 ---
 
@@ -39,23 +39,21 @@ Este documento presenta el diseño de base de datos y el plan de implementación
 
 Nuestro proyecto requiere un sistema de base de datos que pueda:
 
-1. **Almacenar datos geoespaciales a gran escala** (1.8+ mil millones de polígonos de edificaciones)
-2. **Realizar operaciones espaciales** (intersecciones, contención, cálculos de área)
-3. **Soportar indexación espacial** para consultas eficientes
-4. **Manejar datos heterogéneos** (municipios, edificaciones de diferentes fuentes)
-5. **Habilitar análisis reproducible** con propiedades ACID
-6. **Integrarse con Python** y librerías geoespaciales (GeoPandas, Shapely)
+1. **Almacenar datos geoespaciales a gran escala.**  
+2. **Ejecutar operaciones espaciales** (intersección, contención, distancia).  
+3. **Implementar indexación geoespacial 2dsphere.**  
+4. **Soportar datos heterogéneos** (municipios, edificaciones, fuentes distintas).  
+5. **Integrarse con Python y librerías geoespaciales** (PyMongo, GeoPandas).  
+6. **Escalar horizontalmente** con replicación y particionamiento (sharding).
 
 ### 2.2 Tecnologías Candidatas
 
-Evaluamos cuatro sistemas de base de datos NoSQL/NewSQL:
-
-| Base de Datos | Tipo | Soporte Espacial | Funciones Espaciales | Indexación |
-|----------|------|-----------------|-------------------|----------|
-| **PostgreSQL + PostGIS** | Relacional + Extensión | Nativo | 1000+ funciones | R-tree (GiST) |
-| **MongoDB** | Documento | Nativo | 3 funciones | Geohashing + B-tree |
-| **Cassandra + Espacial** | Columna-amplia | Plugin | Limitado | Geohashing |
-| **Neo4j** | Grafo | Plugin | Básico | Dinámico |
+| Base de Datos | Tipo | Soporte Espacial | Indexación | Escalabilidad |
+|---------------|------|------------------|-------------|----------------|
+| **MongoDB** | Documento | Nativo ($geoWithin, $geoIntersects, $near) | 2dsphere | Sharding nativo |
+| **Cassandra (con Spatial)** | Columna-amplia | Limitado | Geohashing | Alta |
+| **Neo4j** | Grafo | Plugin | Dinámico | Media |
+| **PostgreSQL + PostGIS** | Relacional | Extensión | GiST R-tree | Media |
 
 ### 2.3 Análisis Comparativo
 
@@ -128,45 +126,50 @@ Evaluamos cuatro sistemas de base de datos NoSQL/NewSQL:
 
 **Veredicto:** Mejor adaptado para redes de transporte, no huellas de edificaciones
 
-### 2.4 Selección Final: PostgreSQL + PostGIS
+### 2.4 Selección Final: MongoDB (GeoJSON + 2dsphere)
 
-**Decisión:** Seleccionamos **PostgreSQL 16 con PostGIS 3.4** como nuestra solución de base de datos.
+**Decisión:** Seleccionamos **MongoDB** (con documentos GeoJSON y índices `2dsphere`) como la solución de base de datos para este proyecto.
 
 **Justificación:**
 
 1. **Coincidencia con Requisitos Funcionales:**
-   - Nuestra operación central son las uniones espaciales (edificaciones dentro de límites municipales)
-   - PostGIS proporciona ST_Intersects, ST_Contains, ST_Area de forma nativa
-   - Necesidad de transformaciones de coordenadas (WGS84 a CRS proyectado para cálculos de área)
+   - La operación central es detectar relaciones espaciales (por ejemplo, edificaciones dentro de límites municipales). MongoDB soporta consultas geométricas sobre GeoJSON como `$geoIntersects`, `$geoWithin` y `$near` para resolver consultas de tipo “¿esta geometría intersecta/está dentro de…?” de forma nativa.
+   - MongoDB almacena geometrías en formato **GeoJSON** (y asume WGS84), lo que facilita el intercambio con librerías GIS y con formatos web estándar.
+   - Para transformaciones de coordenadas (p. ej. WGS84 a CRS proyectado para cálculos de área), la conversión se realiza en etapa de ingestión o en la capa de aplicación usando herramientas como PROJ, PyProj, Shapely o Turf.js; es recomendable transformar/normalizar coordenadas al cargar los datos si se requieren áreas en un CRS proyectado.
 
 2. **Rendimiento:**
-   - La investigación muestra que PostGIS supera a MongoDB para operaciones con polígonos
-   - Indexación espacial R-tree óptima para nuestro caso de uso
-   - Consultas de agregación eficientes para estadísticas a nivel municipal
+   - MongoDB ofrece índices espaciales `2dsphere` optimizados para consultas geo-json y escala bien en conjuntos de datos grandes, especialmente cuando se combina con **sharding** horizontal.
+   - Consultas de pertenencia espacial (point-in-polygon, intersection) son rápidas con índices `2dsphere`. Para operaciones geométricas vectoriales complejas (uniones espaciales pesadas, topología avanzada, cálculos precisos de área en CRS proyectados) será necesario delegar parte del trabajo a la aplicación o a un motor GIS especializado si se requiere la máxima precisión/velocidad en esas operaciones.
+   - El pipeline de agregación de MongoDB permite realizar agregaciones y estadísticas a nivel municipal (por ejemplo, sumar superficie por grupo, contar edificaciones por polígono) directamente en la base de datos, reduciendo movimiento de datos.
 
 3. **Ecosistema:**
-   - GeoPandas tiene integración nativa con PostGIS (`.to_postgis()`)
-   - QGIS y otras herramientas GIS pueden conectarse directamente
-   - Las librerías Python (psycopg2, GeoAlchemy2) son maduras
+   - Integración madura con Python: `pymongo`, `mongoengine` y herramientas para trabajar con GeoJSON. GeoPandas escribe/lee GeoJSON de forma nativa, por lo que el flujo GeoPandas ⇄ MongoDB es directo mediante exportación/importación de GeoJSON o mediante pequeñas funciones que serialicen geometrías.
+   - MongoDB Atlas (servicio gestionado) ofrece dashboards, copias de seguridad, y soporte para despliegues distribuidos y georredundantes; MongoDB Compass facilita la inspección de documentos GeoJSON.
+   - Para visualización y análisis GIS, se puede exportar GeoJSON desde MongoDB a QGIS o consumirlo desde aplicaciones web (Leaflet, Mapbox). Existen plugins y conectores y, cuando no hay conector directo, el flujo via GeoJSON funciona sin problemas.
 
 4. **Integridad de Datos:**
-   - Las propiedades ACID aseguran análisis reproducible
-   - Transacciones críticas para carga de datos en múltiples pasos
-   - Restricciones y validación a nivel de base de datos
+   - MongoDB soporta operaciones ACID a nivel de documento y desde versiones recientes también soporta **transacciones multi-documento** dentro de réplicas y clusters sharded, lo que permite cargas de datos en múltiples pasos con garantías cuando sea necesario.
+   - La naturaleza documental facilita validar esquemas parcial o dinámicamente (JSON Schema en validadores de colección) y almacenar metadatos semi-estructurados (por ejemplo, propiedades, atributos y trazas históricas) junto con la geometría.
 
-5. **Estándar de la Industria:**
-   - Usado por agencias gubernamentales en todo el mundo para GIS
-   - Documentación extensa y soporte comunitario
-   - Se alinea con los objetivos de modernización de la UPME
+5. **Estándar de la Industria y Escalabilidad:**
+   - MongoDB es ampliamente usado en aplicaciones geoespaciales modernas (servicios de localización, catálogos de activos, aplicaciones web con grandes volúmenes de documentos con geometría).
+   - Soporta **sharding** nativo para escalamiento horizontal y políticas de réplica para alta disponibilidad.
+   - Documentación y comunidad amplias; Atlas ofrece soporte empresarial y características gestionadas (monitoring, alertas, performance advisor).
+
+**Nota sobre Limitaciones y Consideraciones Operativas:**
+- MongoDB trabaja internamente con GeoJSON en WGS84; si necesita cálculos de áreas precisos en unidades métricas (m²), debe transformar geometrías a un CRS proyectado **antes** de almacenar o calcular el área en la capa de aplicación con librerías GIS (Shapely + PyProj, Turf.js, etc.). MongoDB no expone una función equivalente a `ST_Area` en un CRS proyectado.
+- Operaciones espaciales avanzadas (p. ej. joins espaciales complejos, topología y análisis vectorial avanzado) pueden ser más eficientemente realizadas en un motor GIS especializado (PostGIS, o procesado batch con GDAL/OGR/GeoPandas) y almacenar resultados en MongoDB para consultas rápidas por documento.
+- Recomendación práctica: almacenar geometrías como GeoJSON, crear índices `2dsphere` sobre los campos geométricos, y combinar consultas espaciales nativas de MongoDB con procesamiento externo cuando se requieran operaciones geométricas complejas o cálculos de áreas en CRS proyectados.
 
 **Nota sobre la Clasificación "NoSQL":**
-Aunque PostgreSQL se clasifica tradicionalmente como una base de datos relacional, PostGIS la extiende con capacidades que se alinean con características NoSQL:
-- **Flexibilidad de esquema:** Columnas JSONB para metadatos semi-estructurados
-- **Indexación espacial:** Índices R-tree no relacionales
-- **Escalamiento horizontal:** Puede desplegarse con la extensión Citus para sharding
-- **Características modernas:** Tipos de array, búsqueda de texto completo, almacenamiento clave-valor
+MongoDB es una base de datos NoSQL por diseño y aporta al proyecto características esperadas de soluciones NoSQL:
+- **Flexibilidad de esquema:** documentos BSON/JSON para metadatos semi-estructurados sin esquema rígido.
+- **Indexación espacial:** índices `2dsphere` para consultas geoespaciales basadas en GeoJSON.
+- **Escalamiento horizontal:** sharding nativo para distribuir datos y carga.
+- **Características modernas:** agregation framework potente (`$group`, `$match`, `$project`, `$geoNear`), validación por colección (JSON Schema), y soporte para transacciones multi-documento cuando se requieren garantías ACID en procesos complejos.
 
-Para este proyecto, PostgreSQL+PostGIS satisface el requisito de "soluciones NoSQL" proporcionando capacidades de almacenamiento de datos flexibles, escalables y modernas más allá de las bases de datos relacionales tradicionales, específicamente optimizadas para nuestro caso de uso geoespacial.
+**Conclusión:**  
+MongoDB satisface los requisitos de flexibilidad, escalabilidad y geoconsultas necesarias para el Análisis de Potencial Solar en Techos PDET, especialmente si priorizamos un modelo documental con metadatos ricos y necesidad de escalar horizontalmente. Para operaciones geoespaciales analíticas muy avanzadas (uniones espaciales masivas y cálculos topológicos precisos), recomendamos un enfoque híbrido: usar MongoDB como datastore principal (GeoJSON + índices `2dsphere`) y delegar procesamiento GIS intensivo a pipelines especializados (GeoPandas/GDAL/Post-processing) según sea necesario.
 
 ---
 
@@ -262,371 +265,537 @@ Nuestro modelo de datos consiste en tres entidades principales:
 
 ## 4. Diseño de Esquema
 
-### 4.1 Esquema de Base de Datos (PostgreSQL + PostGIS)
+### 4.1 Esquema de Base de Datos (MongoDB)
 
-```sql
--- Habilitar extensión PostGIS
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
+En MongoDB no existen **esquemas SQL** ni **vistas materializadas** en sentido tradicional.  
+La estructura de datos se define mediante **colecciones** (collections) que almacenan documentos JSON/BSON.  
+Cada colección representará una entidad principal del proyecto:
 
--- Esquema para organizar tablas
-CREATE SCHEMA IF NOT EXISTS pdet_solar;
+- `pdet_municipalities` → límites municipales PDET  
+- `buildings_microsoft` → huellas de edificaciones Microsoft  
+- `buildings_google` → huellas de edificaciones Google  
+- `municipality_statistics` → colección generada por procesos de agregación periódicos  
 
--- Establecer ruta de búsqueda
-SET search_path TO pdet_solar, public;
+Las geometrías se almacenarán en formato **GeoJSON**, y cada colección tendrá un índice espacial **2dsphere**  
+para soportar consultas geoespaciales eficientes (`$geoWithin`, `$geoIntersects`, `$near`).
+
+---
+
+
+### 4.2 Colección: `pdet_municipalities`
+
+```js
+// Ejemplo de documento en MongoDB
+{
+  _id: ObjectId("..."),
+  dept_code: "73",                        // Código de departamento (DIVIPOLA)
+  muni_code: "73001",                     // Código de municipio
+  dept_name: "Tolima",
+  muni_name: "Ibagué",
+  pdet_region: "Central Sur",
+  pdet_subregion: "Tolima",
+  geom: {
+    type: "MultiPolygon",
+    coordinates: [
+      [[[ -75.230, 4.439 ], [ -75.210, 4.449 ], [ -75.220, 4.459 ], [ -75.230, 4.439 ]]]
+    ]
+  },
+  area_km2: 1498.23,
+  data_source: "DANE MGN",
+  created_at: ISODate("2025-10-22T12:00:00Z"),
+  updated_at: ISODate("2025-10-22T12:00:00Z")
+}
+
+// Índices
+db.pdet_municipalities.createIndex({ geom: "2dsphere" });
+db.pdet_municipalities.createIndex({ muni_code: 1 });
+db.pdet_municipalities.createIndex({ dept_code: 1 });
+db.pdet_municipalities.createIndex({ pdet_region: 1 });
 ```
 
-### 4.2 Tabla: pdet_municipalities
+### 4.3 Coleccion: buildings_microsoft
 
-```sql
--- Tabla para límites municipales PDET
-CREATE TABLE pdet_municipalities (
-    -- Clave primaria
-    municipality_id SERIAL PRIMARY KEY,
+// Colección para huellas de edificaciones Microsoft en MongoDB
 
-    -- Códigos administrativos (DIVIPOLA)
-    dept_code VARCHAR(2) NOT NULL,           -- Código de departamento
-    muni_code VARCHAR(5) NOT NULL UNIQUE,    -- Código de municipio (DIVIPOLA)
+db.createCollection("buildings_microsoft", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["geom", "area_m2", "dataset_version", "created_at"],
+      properties: {
+        _id: {
+          bsonType: "objectId",
+          description: "Identificador único del edificio (clave primaria)"
+        },
+        geom: {
+          bsonType: "object",
+          required: ["type", "coordinates"],
+          properties: {
+            type: {
+              enum: ["Polygon"],
+              description: "Tipo de geometría: polígono representando la huella de la edificación"
+            },
+            coordinates: {
+              bsonType: "array",
+              description: "Coordenadas del polígono en formato GeoJSON (EPSG:4326)"
+            }
+          }
+        },
+        municipality_id: {
+          bsonType: ["objectId", "null"],
+          description: "Referencia al municipio en la colección pdet_municipalities"
+        },
+        muni_code: {
+          bsonType: ["string", "null"],
+          description: "Código del municipio (DANE)"
+        },
+        area_m2: {
+          bsonType: "double",
+          minimum: 0,
+          description: "Área en metros cuadrados de la edificación"
+        },
+        dataset_version: {
+          bsonType: "string",
+          description: "Versión del conjunto de datos, ej. 'GlobalMLBuildingFootprints-2024'"
+        },
+        confidence: {
+          bsonType: ["double", "null"],
+          minimum: 0,
+          maximum: 1,
+          description: "Nivel de confianza del dato (si está disponible)"
+        },
+        created_at: {
+          bsonType: "date",
+          description: "Fecha de creación del registro"
+        }
+      }
+    }
+  }
+});
 
-    -- Nombres
-    dept_name VARCHAR(100) NOT NULL,         -- Nombre de departamento
-    muni_name VARCHAR(100) NOT NULL,         -- Nombre de municipio
+// Índice geoespacial (CRÍTICO para rendimiento en consultas espaciales)
+db.buildings_microsoft.createIndex({ geom: "2dsphere" });
 
-    -- Información PDET
-    pdet_region VARCHAR(100),                -- Nombre de región PDET
-    pdet_subregion VARCHAR(100),             -- Subregión PDET
+// Índices adicionales para filtrado y uniones
+db.buildings_microsoft.createIndex({ muni_code: 1 });
+db.buildings_microsoft.createIndex({ area_m2: 1 });
 
-    -- Geometría (límite administrativo)
-    geom GEOMETRY(MultiPolygon, 4326) NOT NULL,
-
-    -- Campos calculados
-    area_km2 NUMERIC(12, 4),                 -- Área en kilómetros cuadrados
-
-    -- Metadatos
-    data_source VARCHAR(50) DEFAULT 'DANE MGN',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- Restricciones
-    CONSTRAINT valid_geom CHECK (ST_IsValid(geom))
+// Índice parcial para edificaciones aún no asignadas a municipio
+db.buildings_microsoft.createIndex(
+  { _id: 1 },
+  { partialFilterExpression: { municipality_id: { $exists: false } } }
 );
 
--- Índice espacial (¡el más importante!)
-CREATE INDEX idx_pdet_muni_geom ON pdet_municipalities USING GIST (geom);
+// Comentario general (no soportado nativamente, se documenta aquí)
+// Descripción: Colección que almacena las huellas de edificaciones del dataset
+// Microsoft Global ML Building Footprints, en formato GeoJSON.
 
--- Índices regulares para consultas
-CREATE INDEX idx_pdet_muni_code ON pdet_municipalities (muni_code);
-CREATE INDEX idx_pdet_dept_code ON pdet_municipalities (dept_code);
-CREATE INDEX idx_pdet_region ON pdet_municipalities (pdet_region);
 
--- Comentarios para documentación
-COMMENT ON TABLE pdet_municipalities IS 'Límites municipales de territorios PDET del DANE MGN';
-COMMENT ON COLUMN pdet_municipalities.geom IS 'Límite administrativo en WGS84 (EPSG:4326)';
-```
+// Colección para edificaciones del dataset Google Open Buildings v3 en MongoDB
 
-### 4.3 Tabla: buildings_microsoft
+db.createCollection("buildings_google", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["geom", "geom_type", "dataset_version", "created_at"],
+      properties: {
+        _id: {
+          bsonType: "objectId",
+          description: "Identificador único del edificio (clave primaria)"
+        },
+        geom: {
+          bsonType: "object",
+          required: ["type", "coordinates"],
+          properties: {
+            type: {
+              enum: ["Point", "Polygon"],
+              description: "Tipo de geometría (punto o polígono) representando la edificación"
+            },
+            coordinates: {
+              bsonType: "array",
+              description: "Coordenadas en formato GeoJSON (EPSG:4326)"
+            }
+          }
+        },
+        geom_type: {
+          bsonType: "string",
+          enum: ["POINT", "POLYGON"],
+          description: "Tipo de geometría de la edificación"
+        },
+        municipality_id: {
+          bsonType: ["objectId", "null"],
+          description: "Referencia al municipio en la colección pdet_municipalities"
+        },
+        muni_code: {
+          bsonType: ["string", "null"],
+          description: "Código del municipio (DANE)"
+        },
+        area_m2: {
+          bsonType: ["double", "null"],
+          minimum: 0,
+          description: "Área de la edificación en metros cuadrados (puede ser nula para puntos)"
+        },
+        confidence: {
+          bsonType: ["double", "null"],
+          minimum: 0,
+          maximum: 1,
+          description: "Nivel de confianza del modelo ML (0-1)"
+        },
+        latitude: {
+          bsonType: ["double", "null"],
+          description: "Latitud original (solo para geometrías tipo punto)"
+        },
+        longitude: {
+          bsonType: ["double", "null"],
+          description: "Longitud original (solo para geometrías tipo punto)"
+        },
+        dataset_version: {
+          bsonType: "string",
+          description: "Versión del dataset, por defecto 'v3'"
+        },
+        created_at: {
+          bsonType: "date",
+          description: "Fecha de creación del registro"
+        }
+      }
+    }
+  }
+});
 
-```sql
--- Tabla para huellas de edificaciones Microsoft
-CREATE TABLE buildings_microsoft (
-    -- Clave primaria
-    building_id BIGSERIAL PRIMARY KEY,
+// Índice geoespacial (para consultas espaciales de puntos o polígonos)
+db.buildings_google.createIndex({ geom: "2dsphere" });
 
-    -- Geometría (huella de edificación)
-    geom GEOMETRY(Polygon, 4326) NOT NULL,
+// Índices adicionales para consultas y rendimiento
+db.buildings_google.createIndex({ muni_code: 1 });
+db.buildings_google.createIndex({ area_m2: 1 });
+db.buildings_google.createIndex({ confidence: 1 });
+db.buildings_google.createIndex({ geom_type: 1 });
 
-    -- Ubicación (poblada durante unión espacial)
-    municipality_id INTEGER REFERENCES pdet_municipalities(municipality_id),
-    muni_code VARCHAR(5),
-
-    -- Atributos de edificación
-    area_m2 NUMERIC(10, 2),                  -- Área en metros cuadrados
-
-    -- Metadatos de fuente
-    dataset_version VARCHAR(20),             -- ej., "GlobalMLBuildingFootprints-2024"
-    confidence NUMERIC(3, 2),                -- Puntuación de confianza si está disponible
-
-    -- Metadatos
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- Restricciones
-    CONSTRAINT valid_geom_ms CHECK (ST_IsValid(geom)),
-    CONSTRAINT positive_area_ms CHECK (area_m2 > 0)
+// Índice parcial para edificaciones de alta confianza (confidence >= 0.7)
+db.buildings_google.createIndex(
+  { _id: 1 },
+  { partialFilterExpression: { confidence: { $gte: 0.7 } } }
 );
 
--- Índice espacial (CRÍTICO para rendimiento)
-CREATE INDEX idx_buildings_ms_geom ON buildings_microsoft USING GIST (geom);
+// Comentario (documentado dentro del código)
+// Descripción: Colección que almacena las huellas de edificaciones del dataset
+// Google Open Buildings v3. Incluye geometrías tipo punto o polígono en formato GeoJSON.
 
--- Índices para filtrado y uniones
-CREATE INDEX idx_buildings_ms_muni ON buildings_microsoft (muni_code);
-CREATE INDEX idx_buildings_ms_area ON buildings_microsoft (area_m2);
+### 4.5 Vista Materializada: municipality_statistics (MongoDB)
 
--- Índice parcial para edificaciones aún no asignadas a municipio
-CREATE INDEX idx_buildings_ms_unassigned ON buildings_microsoft (building_id)
-    WHERE municipality_id IS NULL;
+Para consultas eficientes en MongoDB, se crean colecciones materializadas con estadísticas pre-agregadas usando `aggregate()` y operadores como `$lookup`, `$group` y `$out`.  
+Estas colecciones reemplazan las vistas materializadas de PostgreSQL/PostGIS.
 
--- Comentarios
-COMMENT ON TABLE buildings_microsoft IS 'Huellas de edificaciones de Microsoft Global ML Building Footprints';
-COMMENT ON COLUMN buildings_microsoft.geom IS 'Polígono de edificación en WGS84 (EPSG:4326)';
+```js
+// ================================================================
+// Vista materializada: mv_municipality_stats_microsoft
+// ================================================================
+
+db.pdet_municipalities.aggregate([
+  {
+    $lookup: {
+      from: "buildings_microsoft",
+      localField: "municipality_id",
+      foreignField: "municipality_id",
+      as: "buildings"
+    }
+  },
+  { $unwind: { path: "$buildings", preserveNullAndEmptyArrays: true } },
+  {
+    $group: {
+      _id: {
+        municipality_id: "$municipality_id",
+        muni_code: "$muni_code",
+        muni_name: "$muni_name",
+        dept_name: "$dept_name",
+        pdet_region: "$pdet_region"
+      },
+      building_count: { $sum: { $cond: [{ $ifNull: ["$buildings.building_id", false] }, 1, 0] } },
+      total_rooftop_area_m2: { $sum: "$buildings.area_m2" },
+      avg_building_area_m2: { $avg: "$buildings.area_m2" },
+      min_building_area_m2: { $min: "$buildings.area_m2" },
+      max_building_area_m2: { $max: "$buildings.area_m2" },
+      stddev_building_area_m2: { $stdDevSamp: "$buildings.area_m2" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      municipality_id: "$_id.municipality_id",
+      muni_code: "$_id.muni_code",
+      muni_name: "$_id.muni_name",
+      dept_name: "$_id.dept_name",
+      pdet_region: "$_id.pdet_region",
+      building_count: 1,
+      total_rooftop_area_m2: 1,
+      avg_building_area_m2: 1,
+      min_building_area_m2: 1,
+      max_building_area_m2: 1,
+      stddev_building_area_m2: 1
+    }
+  },
+  { $out: "mv_municipality_stats_microsoft" }
+]);
+
+db.mv_municipality_stats_microsoft.createIndex({ muni_code: 1 });
+
+// ================================================================
+// Vista materializada: mv_municipality_stats_google
+// ================================================================
+
+db.pdet_municipalities.aggregate([
+  {
+    $lookup: {
+      from: "buildings_google",
+      localField: "municipality_id",
+      foreignField: "municipality_id",
+      as: "buildings"
+    }
+  },
+  { $unwind: { path: "$buildings", preserveNullAndEmptyArrays: true } },
+  {
+    $group: {
+      _id: {
+        municipality_id: "$municipality_id",
+        muni_code: "$muni_code",
+        muni_name: "$muni_name",
+        dept_name: "$dept_name",
+        pdet_region: "$pdet_region"
+      },
+      building_count: { $sum: { $cond: [{ $ifNull: ["$buildings.building_id", false] }, 1, 0] } },
+      total_rooftop_area_m2: { $sum: "$buildings.area_m2" },
+      avg_building_area_m2: { $avg: "$buildings.area_m2" },
+      avg_confidence: { $avg: "$buildings.confidence" },
+      polygon_count: { $sum: { $cond: [{ $eq: ["$buildings.geom_type", "POLYGON"] }, 1, 0] } },
+      point_count: { $sum: { $cond: [{ $eq: ["$buildings.geom_type", "POINT"] }, 1, 0] } }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      municipality_id: "$_id.municipality_id",
+      muni_code: "$_id.muni_code",
+      muni_name: "$_id.muni_name",
+      dept_name: "$_id.dept_name",
+      pdet_region: "$_id.pdet_region",
+      building_count: 1,
+      total_rooftop_area_m2: 1,
+      avg_building_area_m2: 1,
+      avg_confidence: 1,
+      polygon_count: 1,
+      point_count: 1
+    }
+  },
+  { $out: "mv_municipality_stats_google" }
+]);
+
+db.mv_municipality_stats_google.createIndex({ muni_code: 1 });
+
+// ================================================================
+// Vista materializada: mv_dataset_comparison (Microsoft vs Google)
+// ================================================================
+
+db.mv_municipality_stats_microsoft.aggregate([
+  {
+    $lookup: {
+      from: "mv_municipality_stats_google",
+      localField: "municipality_id",
+      foreignField: "municipality_id",
+      as: "google"
+    }
+  },
+  { $unwind: { path: "$google", preserveNullAndEmptyArrays: true } },
+  {
+    $project: {
+      municipality_id: 1,
+      muni_code: 1,
+      muni_name: 1,
+      dept_name: 1,
+      ms_building_count: "$building_count",
+      ms_total_area_m2: "$total_rooftop_area_m2",
+      gg_building_count: "$google.building_count",
+      gg_total_area_m2: "$google.total_rooftop_area_m2",
+      count_difference: { $abs: { $subtract: ["$building_count", "$google.building_count"] } },
+      area_difference_m2: { $abs: { $subtract: ["$total_rooftop_area_m2", "$google.total_rooftop_area_m2"] } },
+      more_buildings_source: {
+        $switch: {
+          branches: [
+            { case: { $gt: ["$building_count", "$google.building_count"] }, then: "Microsoft" },
+            { case: { $gt: ["$google.building_count", "$building_count"] }, then: "Google" }
+          ],
+          default: "Equal"
+        }
+      }
+    }
+  },
+  { $out: "mv_dataset_comparison" }
+]);
+
+// ================================================================
+// Comentarios descriptivos (documentación interna)
+// ================================================================
+
+db.system.js.save({
+  _id: "metadata_mv_municipality_stats_microsoft",
+  value: function() {
+    return "Estadísticas pre-agregadas para edificaciones Microsoft por municipio";
+  }
+});
+
+db.system.js.save({
+  _id: "metadata_mv_municipality_stats_google",
+  value: function() {
+    return "Estadísticas pre-agregadas para edificaciones Google por municipio";
+  }
+});
+
+db.system.js.save({
+  _id: "metadata_mv_dataset_comparison",
+  value: function() {
+    return "Comparación de conteos y áreas de edificaciones Microsoft vs Google";
+  }
+});
+
+// ================================================================
+// Resumen de colecciones materializadas
+// ================================================================
+//
+// mv_municipality_stats_microsoft → Estadísticas de edificaciones detectadas por Microsoft
+// mv_municipality_stats_google    → Estadísticas de edificaciones detectadas por Google
+// mv_dataset_comparison           → Comparación de conteos y áreas entre Microsoft y Google
+//
+
 ```
 
-### 4.4 Tabla: buildings_google
-
-```sql
--- Tabla para Google Open Buildings
-CREATE TABLE buildings_google (
-    -- Clave primaria
-    building_id BIGSERIAL PRIMARY KEY,
-
-    -- Geometría (huella de edificación - puede ser punto o polígono)
-    geom GEOMETRY(Geometry, 4326) NOT NULL,  -- Geometry permite tanto Point como Polygon
-    geom_type VARCHAR(20),                    -- 'POINT' o 'POLYGON'
-
-    -- Ubicación (poblada durante unión espacial)
-    municipality_id INTEGER REFERENCES pdet_municipalities(municipality_id),
-    muni_code VARCHAR(5),
-
-    -- Atributos de edificación
-    area_m2 NUMERIC(10, 2),                  -- Área en metros cuadrados
-    confidence NUMERIC(3, 2),                -- Confianza del modelo ML (0-1)
-
-    -- Coordenadas originales (para puntos)
-    latitude NUMERIC(10, 7),
-    longitude NUMERIC(10, 7),
-
-    -- Metadatos de fuente
-    dataset_version VARCHAR(20) DEFAULT 'v3',
-
-    -- Metadatos
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- Restricciones
-    CONSTRAINT valid_geom_gg CHECK (ST_IsValid(geom)),
-    CONSTRAINT positive_area_gg CHECK (area_m2 > 0 OR area_m2 IS NULL),
-    CONSTRAINT valid_confidence CHECK (confidence BETWEEN 0 AND 1)
-);
-
--- Índice espacial
-CREATE INDEX idx_buildings_gg_geom ON buildings_google USING GIST (geom);
-
--- Índices regulares
-CREATE INDEX idx_buildings_gg_muni ON buildings_google (muni_code);
-CREATE INDEX idx_buildings_gg_area ON buildings_google (area_m2);
-CREATE INDEX idx_buildings_gg_conf ON buildings_google (confidence);
-CREATE INDEX idx_buildings_gg_type ON buildings_google (geom_type);
-
--- Índice parcial para edificaciones de alta confianza
-CREATE INDEX idx_buildings_gg_high_conf ON buildings_google (building_id)
-    WHERE confidence >= 0.7;
-
--- Comentarios
-COMMENT ON TABLE buildings_google IS 'Huellas de edificaciones de Google Open Buildings v3';
-COMMENT ON COLUMN buildings_google.geom IS 'Geometría de edificación (punto o polígono) en WGS84';
-COMMENT ON COLUMN buildings_google.confidence IS 'Puntuación de confianza del modelo ML (0-1)';
-```
-
-### 4.5 Vista Materializada: municipality_statistics
-
-Para consultas eficientes, creamos vistas materializadas con estadísticas pre-agregadas:
-
-```sql
--- Vista materializada para estadísticas de edificaciones Microsoft
-CREATE MATERIALIZED VIEW mv_municipality_stats_microsoft AS
-SELECT
-    m.municipality_id,
-    m.muni_code,
-    m.muni_name,
-    m.dept_name,
-    m.pdet_region,
-    COUNT(b.building_id) AS building_count,
-    SUM(b.area_m2) AS total_rooftop_area_m2,
-    AVG(b.area_m2) AS avg_building_area_m2,
-    MIN(b.area_m2) AS min_building_area_m2,
-    MAX(b.area_m2) AS max_building_area_m2,
-    STDDEV(b.area_m2) AS stddev_building_area_m2
-FROM pdet_municipalities m
-LEFT JOIN buildings_microsoft b ON ST_Contains(m.geom, b.geom)
-GROUP BY m.municipality_id, m.muni_code, m.muni_name, m.dept_name, m.pdet_region;
-
--- Índice en vista materializada
-CREATE INDEX idx_mv_stats_ms_muni ON mv_municipality_stats_microsoft (muni_code);
-
--- Vista materializada para estadísticas de edificaciones Google
-CREATE MATERIALIZED VIEW mv_municipality_stats_google AS
-SELECT
-    m.municipality_id,
-    m.muni_code,
-    m.muni_name,
-    m.dept_name,
-    m.pdet_region,
-    COUNT(b.building_id) AS building_count,
-    SUM(b.area_m2) AS total_rooftop_area_m2,
-    AVG(b.area_m2) AS avg_building_area_m2,
-    AVG(b.confidence) AS avg_confidence,
-    COUNT(CASE WHEN b.geom_type = 'POLYGON' THEN 1 END) AS polygon_count,
-    COUNT(CASE WHEN b.geom_type = 'POINT' THEN 1 END) AS point_count
-FROM pdet_municipalities m
-LEFT JOIN buildings_google b ON ST_Contains(m.geom, b.geom)
-GROUP BY m.municipality_id, m.muni_code, m.muni_name, m.dept_name, m.pdet_region;
-
--- Índice en vista materializada
-CREATE INDEX idx_mv_stats_gg_muni ON mv_municipality_stats_google (muni_code);
-
--- Vista de comparación
-CREATE MATERIALIZED VIEW mv_dataset_comparison AS
-SELECT
-    m.municipality_id,
-    m.muni_code,
-    m.muni_name,
-    m.dept_name,
-    ms.building_count AS ms_building_count,
-    ms.total_rooftop_area_m2 AS ms_total_area_m2,
-    gg.building_count AS gg_building_count,
-    gg.total_rooftop_area_m2 AS gg_total_area_m2,
-    ABS(ms.building_count - gg.building_count) AS count_difference,
-    ABS(ms.total_rooftop_area_m2 - gg.total_rooftop_area_m2) AS area_difference_m2,
-    CASE
-        WHEN ms.building_count > gg.building_count THEN 'Microsoft'
-        WHEN gg.building_count > ms.building_count THEN 'Google'
-        ELSE 'Equal'
-    END AS more_buildings_source
-FROM pdet_municipalities m
-LEFT JOIN mv_municipality_stats_microsoft ms USING (municipality_id)
-LEFT JOIN mv_municipality_stats_google gg USING (municipality_id);
-
--- Comentarios
-COMMENT ON MATERIALIZED VIEW mv_municipality_stats_microsoft IS 'Estadísticas pre-agregadas para edificaciones Microsoft por municipio';
-COMMENT ON MATERIALIZED VIEW mv_municipality_stats_google IS 'Estadísticas pre-agregadas para edificaciones Google por municipio';
-COMMENT ON MATERIALIZED VIEW mv_dataset_comparison IS 'Comparación de conteos y áreas de edificaciones Microsoft vs Google';
-```
-
-### 4.6 Características de Optimización de Esquema
+### 4.6 Características de Optimización de Esquema (MongoDB)
 
 #### Estrategia de Particionamiento (para conjuntos de datos muy grandes)
 
-Si las tablas de edificaciones se vuelven demasiado grandes (miles de millones de registros), podemos particionar por municipio o región geográfica:
+En MongoDB, el particionamiento se logra mediante **sharding**, que distribuye los documentos en múltiples nodos de un clúster según una clave de fragmentación.  
+Esto permite escalar horizontalmente y manejar grandes volúmenes de datos (por ejemplo, millones de edificaciones).
 
-```sql
--- Ejemplo: Particionar buildings_microsoft por departamento
-CREATE TABLE buildings_microsoft_partitioned (
-    LIKE buildings_microsoft INCLUDING ALL
-) PARTITION BY LIST (dept_code);
+**Ejemplo: Sharding por código de municipio o departamento**
 
--- Crear particiones para departamentos principales
-CREATE TABLE buildings_microsoft_dept_05 PARTITION OF buildings_microsoft_partitioned
-    FOR VALUES IN ('05');  -- Antioquia
+```javascript
+// Habilitar el sharding en la base de datos
+sh.enableSharding("solar_pdet");
 
-CREATE TABLE buildings_microsoft_dept_08 PARTITION OF buildings_microsoft_partitioned
-    FOR VALUES IN ('08');  -- Atlántico
+// Definir índice en el campo de partición
+db.buildings_microsoft.createIndex({ dept_code: 1 });
 
--- ... crear particiones para otros departamentos
+// Habilitar el sharding en la colección por departamento
+sh.shardCollection("solar_pdet.buildings_microsoft", { dept_code: "hashed" });
+
+// También se puede usar el código de municipio como clave alternativa
+db.buildings_google.createIndex({ muni_code: 1 });
+sh.shardCollection("solar_pdet.buildings_google", { muni_code: "hashed" });
 ```
 
-#### Estrategia de Vacuum y Analyze
 
-```sql
--- Configuraciones de auto-vacuum para tablas grandes
-ALTER TABLE buildings_microsoft SET (
-    autovacuum_vacuum_scale_factor = 0.05,
-    autovacuum_analyze_scale_factor = 0.02
-);
 
-ALTER TABLE buildings_google SET (
-    autovacuum_vacuum_scale_factor = 0.05,
-    autovacuum_analyze_scale_factor = 0.02
-);
-```
 
----
-
-## 5. Estrategia de Indexación Espacial
+## 5. Optimización Espacial y de Consultas (MongoDB)
 
 ### 5.1 Resumen de Índice Espacial
 
-PostGIS utiliza indexación espacial **R-tree** a través de la estructura de índice **GiST (Generalized Search Tree)** de PostgreSQL.
+En MongoDB, los índices espaciales se implementan mediante el tipo **2dsphere**, que permite realizar consultas geoespaciales eficientes sobre coordenadas en formato GeoJSON.  
+Estos índices son equivalentes funcionales a los **R-tree / GiST** de PostGIS, optimizados para consultas de intersección, contención y distancia.
 
-**Cómo funcionan los R-trees:**
-- Estructura jerárquica que agrupa objetos geométricos cercanos
-- Cajas envolventes (MBRs - Minimum Bounding Rectangles) en cada nivel
-- Óptimo para consultas espaciales 2D (intersects, contains, overlaps)
-- Tiempo de consulta: O(log n) caso promedio
+**Características principales de los índices 2dsphere:**
+- Basados en jerarquías geográficas similares a R-tree.
+- Soportan geometrías en 2D y esferas (latitud/longitud).
+- Ideales para operaciones como `$geoWithin`, `$near`, `$intersects`.
+- Complejidad de consulta promedio: **O(log n)**.
+
+---
 
 ### 5.2 Configuración de Índices
 
-Todas las columnas de geometría tienen índices GiST:
+En MongoDB, los índices se crean directamente sobre los campos de tipo GeoJSON (`Point`, `Polygon`, `MultiPolygon`), que reemplazan el tipo `geometry` de PostGIS.
 
-```sql
--- Primary spatial indexes (already defined above)
-CREATE INDEX idx_pdet_muni_geom ON pdet_municipalities USING GIST (geom);
-CREATE INDEX idx_buildings_ms_geom ON buildings_microsoft USING GIST (geom);
-CREATE INDEX idx_buildings_gg_geom ON buildings_google USING GIST (geom);
+```javascript
+// Índice espacial para municipios (geometría de límites)
+db.pdet_municipalities.createIndex({ geom: "2dsphere" });
+
+// Índices espaciales para edificaciones detectadas por Microsoft y Google
+db.buildings_microsoft.createIndex({ geom: "2dsphere" });
+db.buildings_google.createIndex({ geom: "2dsphere" });
+
+// Índices complementarios para búsqueda rápida por municipio o departamento
+db.buildings_microsoft.createIndex({ muni_code: 1 });
+db.buildings_google.createIndex({ muni_code: 1 });
+db.pdet_municipalities.createIndex({ muni_code: 1 });
 ```
 
-### 5.3 Index Tuning Parameters
+### 5.3 Parámetros de Ajuste de Índices (MongoDB)
 
-For optimal performance with large datasets:
+Para lograr un rendimiento óptimo con grandes volúmenes de datos, MongoDB ofrece herramientas que reemplazan configuraciones como `fillfactor` o parámetros de almacenamiento de PostGIS.
 
-```sql
--- Increase fillfactor for read-heavy workloads
-CREATE INDEX idx_buildings_ms_geom ON buildings_microsoft
-    USING GIST (geom) WITH (fillfactor = 90);
+**Estrategias equivalentes:**
 
--- Set storage parameter for geometry columns
-ALTER TABLE buildings_microsoft ALTER COLUMN geom SET STORAGE MAIN;
-ALTER TABLE buildings_google ALTER COLUMN geom SET STORAGE MAIN;
+```javascript
+// 1. Verificar tamaño y estado de índices
+db.buildings_microsoft.stats().indexSizes;
+db.buildings_google.stats().indexSizes;
+
+// 2. Reconstruir índices para mejorar rendimiento en colecciones con alta rotación de datos
+db.buildings_microsoft.reIndex();
+db.buildings_google.reIndex();
+
+// 3. Crear índices adicionales para optimizar consultas espaciales y por municipio
+db.buildings_microsoft.createIndex({ geom: "2dsphere" });
+db.buildings_google.createIndex({ geom: "2dsphere" });
+db.pdet_municipalities.createIndex({ geom: "2dsphere" });
+
+db.buildings_microsoft.createIndex({ muni_code: 1 });
+db.buildings_google.createIndex({ muni_code: 1 });
 ```
 
-### 5.4 Query Optimization
+### 5.4 Optimización de Consultas Espaciales en MongoDB
 
-**Use bounding box operators for initial filtering:**
+MongoDB utiliza **índices geoespaciales 2dsphere** para optimizar consultas que involucran geometrías complejas (puntos, polígonos, líneas).  
+Esto permite realizar operaciones espaciales directamente sobre los documentos sin necesidad de prefiltrado manual.
 
-```sql
--- BAD: Direct geometry comparison (slow)
-SELECT * FROM buildings_microsoft b, pdet_municipalities m
-WHERE ST_Contains(m.geom, b.geom);
+#### Creación de Índices Espaciales
 
--- GOOD: Bounding box pre-filter with && operator
-SELECT * FROM buildings_microsoft b, pdet_municipalities m
-WHERE m.geom && b.geom                    -- Fast bounding box check
-  AND ST_Contains(m.geom, b.geom);        -- Exact geometry check
+```js
+// Crear índices 2dsphere en las colecciones geoespaciales
+db.buildings_microsoft.createIndex({ location: "2dsphere" });
+db.pdet_municipalities.createIndex({ geometry: "2dsphere" });
+```
+### 5.5 Recolección de Estadísticas y Monitoreo de Índices en MongoDB
 
--- BEST: PostGIS does this automatically when index exists
-SELECT * FROM buildings_microsoft b
-JOIN pdet_municipalities m ON ST_Contains(m.geom, b.geom);
+En MongoDB, no se utiliza `ANALYZE` como en PostgreSQL.  
+En su lugar, se emplean **comandos de diagnóstico y estadísticas de índice** para monitorear el rendimiento y el uso de los índices geoespaciales y de otros tipos.
+
+#### Verificar Estadísticas de Colección
+
+```js
+// Obtener estadísticas generales de una colección
+db.pdet_municipalities.stats();
+db.buildings_microsoft.stats();
+db.buildings_google.stats();
 ```
 
-### 5.5 Statistics Collection
+### 5.6 Monitoreo del Rendimiento en MongoDB
 
-Ensure query planner has accurate statistics:
-
-```sql
--- Collect statistics on geometry columns
-ANALYZE pdet_municipalities;
-ANALYZE buildings_microsoft;
-ANALYZE buildings_google;
-
--- Check index usage
-SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch
-FROM pg_stat_user_indexes
-WHERE schemaname = 'pdet_solar'
-ORDER BY idx_scan DESC;
-```
-
-### 5.6 Performance Monitoring
-
-```sql
--- Monitor query performance
-EXPLAIN ANALYZE
-SELECT m.muni_name, COUNT(b.building_id) as building_count
-FROM pdet_municipalities m
-LEFT JOIN buildings_microsoft b ON ST_Contains(m.geom, b.geom)
-GROUP BY m.muni_name;
-
--- Check if index is being used
--- Look for "Index Scan using idx_buildings_ms_geom" in EXPLAIN output
-```
+En MongoDB no se utiliza `EXPLAIN ANALYZE` como en PostgreSQL.  
+En su lugar, se emplea el método **`.explain()`** para analizar el plan de ejecución de una consulta y verificar si los índices están siendo utilizados correctamente.
 
 ---
+
+#### Analizar el Plan de Ejecución de una Consulta
+
+```js
+// Analizar una consulta geoespacial con .explain()
+db.buildings_microsoft.find({
+  location: {
+    $geoWithin: {
+      $geometry: municipioGeom
+    }
+  }
+}).explain("executionStats");
+```
 
 ## 6. Plan de Implementación
 
@@ -642,81 +811,132 @@ GROUP BY m.muni_name;
 
 ### 6.2 Fase 1: Configuración de Base de Datos (Oct 23-24)
 
-**Objetivo:** Instalar PostgreSQL/PostGIS y crear esquema de base de datos.
+**Objetivo:** Instalar y configurar MongoDB, crear la base de datos y las colecciones necesarias para el proyecto.
 
-**Tareas:**
-1. Instalar PostgreSQL 16 en máquina local o nube (AWS RDS, Google Cloud SQL, Azure Database)
-2. Instalar extensión PostGIS 3.4
-3. Crear base de datos: `pdet_solar_analysis`
-4. Crear esquema: `pdet_solar`
-5. Ejecutar scripts DDL (sentencias CREATE TABLE de la Sección 4)
-6. Verificar que los índices se crearon exitosamente
-7. Crear vistas materializadas iniciales
-8. Configurar conexión a base de datos en Python
+---
 
-**Entregables:**
-- Instancia de PostgreSQL en ejecución
-- Todas las tablas e índices creados
-- Script de prueba de conexión (`src/database/connection.py`)
+#### **Tareas:**
 
-**Pruebas:**
-```sql
--- Verificar instalación de PostGIS
-SELECT PostGIS_Full_Version();
+1. Instalar **MongoDB Community Server** o usar un servicio en la nube (MongoDB Atlas, AWS DocumentDB, Azure Cosmos DB con API MongoDB).  
+2. Crear base de datos: `pdet_solar_analysis`.  
+3. Crear colecciones principales:
+   - `pdet_municipalities`
+   - `buildings_microsoft`
+   - `buildings_google`
+   - `municipality_statistics`
+4. Insertar documentos de prueba o cargar los datos iniciales.  
+5. Crear índices geoespaciales (`2dsphere`) para las colecciones con geometría.  
+6. Verificar la creación de índices y estructuras de datos.  
+7. Configurar la conexión desde Python con la librería **PyMongo** (`src/database/connection.py`).  
+8. Probar operaciones básicas de lectura y escritura en la base de datos.  
 
--- Verificar tablas creadas
-SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'pdet_solar';
+---
 
--- Verificar índices espaciales
-SELECT indexname FROM pg_indexes
-WHERE schemaname = 'pdet_solar' AND indexdef LIKE '%USING gist%';
+#### **Entregables:**
+
+- Instancia de **MongoDB** en ejecución (local o nube).  
+- Colecciones e índices creados correctamente.  
+- Script de conexión funcional en Python (`src/database/connection.py`).  
+
+---
+
+#### **Pruebas:**
+
+```js
+// Verificar conexión a MongoDB
+use pdet_solar_analysis;
+
+// Verificar colecciones creadas
+show collections;
+
+// Verificar índices geoespaciales
+db.buildings_microsoft.getIndexes();
+db.buildings_google.getIndexes();
+
+// Crear índice 2dsphere si no existe
+db.buildings_microsoft.createIndex({ location: "2dsphere" });
+db.buildings_google.createIndex({ location: "2dsphere" });
+
+// Prueba de conexión desde Python (PyMongo)
+from pymongo import MongoClient
+
+client = MongoClient("mongodb://localhost:27017/")
+db = client["pdet_solar_analysis"]
+print(db.list_collection_names())
 ```
+### 6.3 Fase 2: Carga de Datos de Municipios PDET (Oct 25 - Nov 3)
 
-### 6.3 Fase 2: Carga de Datos de Municipios PDET (Oct 25-Nov 3)
+**Objetivo:** Cargar y validar los límites municipales PDET dentro de la base de datos MongoDB.
 
-**Objetivo:** Cargar y validar límites municipales PDET.
+---
 
-**Tareas:**
-1. Descargar datos del DANE MGN (formato Shapefile)
-2. Filtrar municipios designados como territorios PDET
-3. Validar geometrías (corregir polígonos inválidos si hay)
-4. Transformar a WGS84 (EPSG:4326) si es necesario
-5. Cargar en tabla `pdet_municipalities`
-6. Calcular campo area_km2
-7. Verificar rendimiento de índice espacial
-8. Crear mapa de visualización
+#### **Tareas:**
 
-**Fuente de Datos:**
-- DANE Geoportal: https://geoportal.dane.gov.co
-- Lista PDET: https://centralpdet.renovacionterritorio.gov.co
+1. Descargar los datos del **DANE MGN** en formato **Shapefile (.shp)**.  
+2. Filtrar únicamente los municipios designados como territorios **PDET**.  
+3. Validar geometrías y corregir polígonos inválidos (usando herramientas como `geopandas` o `shapely`).  
+4. Asegurar que el sistema de coordenadas esté en **WGS84 (EPSG:4326)**.  
+5. Convertir los datos a formato **GeoJSON**.  
+6. Insertar los documentos en la colección `pdet_municipalities` en MongoDB.  
+7. Calcular el campo `area_km2` a partir de la geometría.  
+8. Crear un índice geoespacial `2dsphere` para mejorar el rendimiento en consultas espaciales.  
+9. Generar un **mapa de visualización interactivo** (por ejemplo, con Folium o Kepler.gl).  
 
-**Scripts:**
-- `src/data_loaders/dane_loader.py`
+---
+
+#### **Fuente de Datos:**
+
+- [DANE Geoportal](https://geoportal.dane.gov.co)  
+- [Lista oficial de Municipios PDET](https://centralpdet.renovacionterritorio.gov.co)
+
+---
+
+#### **Scripts:**
+
+- `src/data_loaders/dane_loader.py`  
 - `notebooks/02_pdet_municipalities.ipynb`
 
-**Entregables:**
-- 170 municipios PDET cargados
-- Reporte de calidad de datos
-- Mapa interactivo (Folium)
-- Documentación (Entregable 2)
+---
 
-**Consultas de Validación:**
-```sql
--- Verificar conteo de registros
-SELECT COUNT(*) FROM pdet_municipalities;  -- Debería ser ~170
+#### **Entregables:**
 
--- Verificar geometrías inválidas
-SELECT muni_code, muni_name FROM pdet_municipalities
-WHERE NOT ST_IsValid(geom);  -- Debería retornar 0 filas
+- **170 municipios PDET** cargados en MongoDB.  
+- **Reporte de calidad de datos** con geometrías validadas.  
+- **Mapa interactivo** mostrando límites municipales.  
+- **Documentación** del proceso (Entregable 2).  
 
--- Verificar CRS
-SELECT Find_SRID('pdet_solar', 'pdet_municipalities', 'geom');  -- Debería ser 4326
+---
 
--- Verificar cálculo de área
-SELECT muni_name, area_km2 FROM pdet_municipalities ORDER BY area_km2 DESC LIMIT 10;
+#### **Consultas de Validación en MongoDB:**
+
+```js
+// Contar municipios cargados
+db.pdet_municipalities.countDocuments();  // Debería ser ~170
+
+// Verificar si existen documentos sin geometría
+db.pdet_municipalities.find({ geometry: { $exists: false } }).count();  // Debería ser 0
+
+// Verificar sistema de coordenadas (CRS)
+db.pdet_municipalities.findOne({}, { "geometry.crs": 1 });
+
+// Calcular áreas (puede hacerse con Python + GeoPandas o en un pipeline de agregación)
+db.pdet_municipalities.aggregate([
+  {
+    $project: {
+      muni_name: 1,
+      area_km2: {
+        $divide: [
+          { $multiply: [{ $meta: "geoNearDistance" }, 1] }, 1000000
+        ]
+      }
+    }
+  }
+]);
+
+// Crear índice geoespacial si no existe
+db.pdet_municipalities.createIndex({ geometry: "2dsphere" });
+
 ```
-
 ### 6.4 Fase 3: Carga de Datos de Huellas de Edificaciones (Nov 4-10)
 
 **Objetivo:** Cargar conjuntos de datos de edificaciones de Microsoft y Google para Colombia.
@@ -735,122 +955,158 @@ SELECT muni_name, area_km2 FROM pdet_municipalities ORDER BY area_km2 DESC LIMIT
 7. Ejecutar unión espacial para asignar `municipality_id`
 8. Verificar calidad de datos
 
-#### 3.2 Edificaciones Google
-1. Descargar datos de Google Open Buildings
-   - Filtrar para Colombia (formato CSV)
-2. Parsear formato de geometría WKT
-3. Convertir a geometría PostGIS
-4. Filtrar edificaciones dentro o cerca de municipios PDET
-5. Calcular área en m² para polígonos
-6. Carga por lotes en `buildings_google`
-7. Ejecutar unión espacial para asignar `municipality_id`
-8. Verificar calidad de datos
+### 3.2 Edificaciones Google
 
-**Scripts:**
-- `src/data_loaders/microsoft_loader.py`
-- `src/data_loaders/google_loader.py`
+**Objetivo:** Cargar, procesar y validar los datos de edificaciones provenientes de **Google Open Buildings** para los municipios PDET en MongoDB.
+
+---
+
+#### **Tareas:**
+
+1. Descargar los datos de **Google Open Buildings** en formato **CSV**.  
+2. Filtrar los registros correspondientes a **Colombia**.  
+3. Convertir la columna de geometría (formato WKT) a formato **GeoJSON** compatible con MongoDB.  
+4. Filtrar edificaciones ubicadas dentro o cercanas a los **municipios PDET**.  
+5. Calcular el área en **m²** para las edificaciones tipo polígono.  
+6. Cargar los datos procesados en la colección `buildings_google`.  
+7. Ejecutar una **asignación espacial** para vincular cada edificación con su `municipality_id`.  
+8. Validar la **calidad de los datos** (geometrías válidas, duplicados, áreas nulas, etc.).  
+
+---
+
+#### **Scripts:**
+
+- `src/data_loaders/microsoft_loader.py`  
+- `src/data_loaders/google_loader.py`  
 - `notebooks/03_building_data_loading.ipynb`
 
-**Optimización:**
-- Usar COPY masivo en lugar de INSERTs individuales
-- Deshabilitar índices durante carga masiva, reconstruir después
-- Usar transacciones para atomicidad
-- Procesar en lotes de 100k-1M registros
+---
 
-**Performance Considerations:**
+#### **Optimización:**
+
+- Utilizar **inserciones masivas** (`insert_many()`) en lugar de cargas documento por documento.  
+- Deshabilitar índices durante la carga masiva y reconstruirlos después.  
+- Procesar los datos en **lotes** de entre **100.000 y 1.000.000 registros** para mejorar el rendimiento.  
+- Validar que los datos mantengan coherencia espacial y consistencia de atributos.  
+
+---
+
+#### **Ejemplo de Carga Masiva con Python + PyMongo**
+
 ```python
-# Example: Bulk loading with pandas/geopandas
-import geopandas as gpd
-from sqlalchemy import create_engine
+import pandas as pd
+from shapely import wkt
+from shapely.geometry import mapping
+from pymongo import MongoClient
 
-# Load GeoJSON
-gdf = gpd.read_file('buildings_colombia_ms.geojson')
+# Conexión a MongoDB
+client = MongoClient("mongodb://localhost:27017/")
+db = client["pdet_solar_analysis"]
+collection = db["buildings_google"]
 
-# Calculate area
-gdf['area_m2'] = gdf.geometry.to_crs(epsg=3116).area  # Colombia CRS
+# Cargar CSV de Google Open Buildings
+df = pd.read_csv("google_open_buildings_colombia.csv")
 
-# Bulk load to PostGIS
-engine = create_engine('postgresql://user:pass@localhost/pdet_solar_analysis')
-gdf.to_postgis('buildings_microsoft', engine, schema='pdet_solar',
-               if_exists='append', index=False, chunksize=10000)
+# Convertir WKT a GeoJSON
+df["geometry"] = df["geometry"].apply(lambda x: mapping(wkt.loads(x)))
+
+# Calcular área (solo si es polígono)
+df["area_m2"] = df["geometry"].apply(
+    lambda g: wkt.loads(g["coordinates"]) if g["type"] == "Polygon" else None
+)
+
+# Convertir a documentos MongoDB
+docs = df.to_dict("records")
+
+# Inserción masiva
+collection.insert_many(docs)
+
+# Crear índice geoespacial 2dsphere
+collection.create_index([("geometry", "2dsphere")])
+
 ```
+### 6.5 Fase 4: Análisis Espacial y Agregación (Nov 11–17)
 
-**Entregables:**
-- Edificaciones cargadas para ambos conjuntos de datos
-- Reporte de eficiencia de carga de datos
-- Análisis Exploratorio de Datos (EDA)
-- Métricas de calidad de datos
-- Documentación (Entregable 3)
+**Objetivo:**  
+Realizar análisis geoespacial en MongoDB para estimar áreas de techos y comparar resultados entre fuentes (Google y Microsoft).
 
-**Consultas de Validación:**
-```sql
--- Verificar conteos de registros
-SELECT 'Microsoft' AS source, COUNT(*) AS count FROM buildings_microsoft
-UNION ALL
-SELECT 'Google', COUNT(*) FROM buildings_google;
+---
 
--- Verificar asignación espacial
-SELECT
-    COUNT(*) AS total,
-    COUNT(municipality_id) AS assigned,
-    COUNT(*) - COUNT(municipality_id) AS unassigned
-FROM buildings_microsoft;
+#### **Tareas:**
+1. Actualizar colecciones agregadas con estadísticas recientes.  
+2. Ejecutar **consultas geoespaciales** usando operadores como `$geoWithin` y `$geoIntersects` para unir edificaciones con municipios.  
+3. Comparar conteos de edificaciones entre **Microsoft y Google** por municipio.  
+4. Calcular el **área total de techos** por municipio.  
+5. Identificar municipios con **mayor potencial solar** según el área acumulada.  
+6. Exportar tablas de resultados a **CSV/JSON**.  
+7. Crear **visualizaciones** (mapas de coropletas y gráficos).  
+8. Validar precisión de las operaciones geoespaciales.  
+9. Documentar la metodología para **reproducibilidad** del análisis.  
 
--- Verificar distribución de datos
-SELECT m.muni_name, COUNT(b.building_id) AS building_count
-FROM pdet_municipalities m
-LEFT JOIN buildings_microsoft b USING (municipality_id)
-GROUP BY m.muni_name
-ORDER BY building_count DESC
-LIMIT 10;
-```
+---
 
-### 6.5 Fase 4: Análisis Espacial y Agregación (Nov 11-17)
+#### **Scripts:**
+- `src/analysis/spatial_join.py`  
+- `src/analysis/area_calculator.py`  
+- `src/analysis/aggregator.py`  
+- `src/visualization/maps.py`  
+- `notebooks/04_spatial_analysis.ipynb`  
 
-**Objetivo:** Realizar análisis geoespacial para estimar áreas de techos.
+---
 
-**Tareas:**
-1. Refrescar vistas materializadas con estadísticas agregadas
-2. Ejecutar consultas de unión espacial para resúmenes a nivel municipal
-3. Comparar conteos de edificaciones Microsoft vs Google
-4. Calcular área total de techos por municipio
-5. Identificar municipios principales por potencial solar
-6. Generar tablas de resultados (exportaciones CSV)
-7. Crear visualizaciones (mapas de coropletas, gráficos)
-8. Validar precisión de operaciones espaciales
-9. Documentar metodología para reproducibilidad
+#### **Consultas y Agregaciones en MongoDB**
 
-**Scripts:**
-- `src/analysis/spatial_join.py`
-- `src/analysis/area_calculator.py`
-- `src/analysis/aggregator.py`
-- `src/visualization/maps.py`
-- `notebooks/04_spatial_analysis.ipynb`
+```python
+from pymongo import MongoClient
+import pandas as pd
 
-**Key Queries:**
-```sql
--- Refresh statistics
-REFRESH MATERIALIZED VIEW mv_municipality_stats_microsoft;
-REFRESH MATERIALIZED VIEW mv_municipality_stats_google;
-REFRESH MATERIALIZED VIEW mv_dataset_comparison;
+# Conexión a la base de datos
+client = MongoClient("mongodb://localhost:27017/")
+db = client["pdet_solar_analysis"]
 
--- Top 10 municipalities by total rooftop area (Microsoft)
-SELECT muni_name, dept_name, building_count,
-       total_rooftop_area_m2,
-       total_rooftop_area_m2 / 1000000 AS total_area_km2
-FROM mv_municipality_stats_microsoft
-ORDER BY total_rooftop_area_m2 DESC
-LIMIT 10;
+# Agregación: área total de techos por municipio (Google)
+pipeline_google = [
+    {
+        "$group": {
+            "_id": "$municipality_name",
+            "building_count": {"$sum": 1},
+            "total_rooftop_area_m2": {"$sum": "$area_m2"}
+        }
+    },
+    {"$sort": {"total_rooftop_area_m2": -1}},
+    {"$limit": 10}
+]
 
--- Dataset comparison
-SELECT muni_name,
-       ms_building_count,
-       gg_building_count,
-       more_buildings_source,
-       count_difference
-FROM mv_dataset_comparison
-ORDER BY count_difference DESC
-LIMIT 20;
+google_results = list(db.buildings_google.aggregate(pipeline_google))
+df_google = pd.DataFrame(google_results)
+
+# Agregación: comparación entre Microsoft y Google
+pipeline_comparison = [
+    {
+        "$lookup": {
+            "from": "buildings_microsoft",
+            "localField": "municipality_name",
+            "foreignField": "municipality_name",
+            "as": "microsoft_data"
+        }
+    },
+    {
+        "$project": {
+            "municipality_name": 1,
+            "google_count": {"$literal": 1},
+            "microsoft_count": {"$size": "$microsoft_data"},
+            "count_difference": {
+                "$subtract": [{"$size": "$microsoft_data"}, 1]
+            }
+        }
+    },
+    {"$sort": {"count_difference": -1}},
+    {"$limit": 20}
+]
+
+comparison_results = list(db.buildings_google.aggregate(pipeline_comparison))
+df_comparison = pd.DataFrame(comparison_results)
+
 ```
 
 **Entregables:**
@@ -883,33 +1139,43 @@ LIMIT 20;
 
 ### 6.7 Requisitos de Recursos
 
-#### Hardware
-- **Máquina de Desarrollo:** 16GB RAM mínimo, 50GB de espacio libre en disco
+#### **Hardware**
+- **Máquina de Desarrollo:** 16 GB de RAM mínimo, 50 GB de espacio libre en disco.  
 - **Servidor de Base de Datos:**
-  - Opción A: Instancia local de PostgreSQL
-  - Opción B: Base de datos en nube (AWS RDS, Google Cloud SQL)
-  - Recomendado: 32GB RAM, 200GB almacenamiento SSD
+  - **Opción A:** Instancia local de **MongoDB**.  
+  - **Opción B:** Base de datos en la nube (**MongoDB Atlas**, AWS, Google Cloud, Azure).  
+  - **Recomendado:** 32 GB de RAM, 200 GB de almacenamiento SSD.  
 
-#### Software
-- PostgreSQL 16+
-- PostGIS 3.4+
-- Python 3.9+
-- Librerías: pandas, geopandas, psycopg2, sqlalchemy, folium, matplotlib
+---
 
-#### Almacenamiento de Datos
-- Datos crudos: ~20-50 GB (comprimidos)
-- Datos procesados en base de datos: ~100-200 GB (sin comprimir)
-- Resultados y visualizaciones: ~1 GB
+#### **Software**
+- **MongoDB 7.0+**
+- **Python 3.9+**
+- **Librerías:**  
+  - `pandas`, `geopandas`, `pymongo`, `dnspython`, `folium`, `matplotlib`, `plotly`, `numpy`  
+  - (Opcional) `mongoengine` o `motor` para manejo ORM/asíncrono.  
+
+---
+
+#### **Almacenamiento de Datos**
+- **Datos crudos:** ~20–50 GB (comprimidos).  
+- **Datos procesados en MongoDB:** ~100–200 GB (sin comprimir).  
+- **Resultados y visualizaciones:** ~1 GB.  
+- **Índices geoespaciales (2dsphere):** consumo adicional de almacenamiento (~10–15 % del total de datos).  
+
+---
 
 ### 6.8 Mitigación de Riesgos
 
 | Riesgo | Impacto | Probabilidad | Mitigación |
-|------|--------|-------------|------------|
-| Conjunto de datos demasiado grande para descargar | Alto | Medio | Usar datos filtrados/muestreados o procesamiento en nube |
-| Consultas espaciales lentas | Medio | Medio | Optimizar índices, usar vistas materializadas |
-| Errores de validación de geometría | Medio | Alto | Pre-procesar con ST_MakeValid |
-| Espacio de disco insuficiente | Alto | Bajo | Monitorear uso, usar almacenamiento en nube |
-| Caídas de base de datos durante carga | Medio | Bajo | Usar transacciones, guardar puntos de control |
+|--------|----------|--------------|-------------|
+| Volumen de datos demasiado grande para importar | Alto | Medio | Usar importación por lotes (`mongoimport --batchSize`), filtrado previo con `GeoPandas`, o procesamiento en la nube (MongoDB Atlas). |
+| Consultas geoespaciales lentas | Medio | Medio | Crear índices `2dsphere`, particionar por municipio o departamento y usar agregaciones con `$geoNear` o `$geoWithin`. |
+| Errores en geometrías o datos inconsistentes | Medio | Alto | Validar geometrías antes de carga con `GeoPandas.is_valid` y corrección automática usando `buffer(0)`. |
+| Espacio de disco insuficiente | Alto | Bajo | Monitorear con `db.stats()`, habilitar compresión WiredTiger y usar almacenamiento en la nube. |
+| Caídas durante la carga de datos masiva | Medio | Bajo | Implementar transacciones (`session.start_transaction()`), checkpoints por lote y respaldo automático (`mongodump`). |
+
+---
 
 ---
 
@@ -917,41 +1183,74 @@ LIMIT 20;
 
 ### 7.1 ¿Por Qué Este Diseño?
 
-Nuestro diseño de esquema aborda todos los requisitos del proyecto:
+Nuestro diseño de esquema con **MongoDB** aborda todos los requisitos del proyecto de manera eficiente y escalable:
 
-1. **Requisito NoSQL:** PostgreSQL+PostGIS proporciona almacenamiento de datos moderno y flexible con capacidades espaciales más allá de las bases de datos relacionales tradicionales.
+1. **Requisito NoSQL:**  
+   MongoDB ofrece un modelo de documentos flexible basado en JSON que permite almacenar datos estructurados y no estructurados, ideal para la gestión de información geoespacial sin las limitaciones de un esquema rígido.
 
-2. **Escalabilidad:** Puede manejar 1.8+ mil millones de registros de edificaciones con indexación y particionamiento adecuados.
+2. **Escalabilidad:**  
+   MongoDB es altamente escalable horizontalmente mediante *sharding*, lo que permite manejar volúmenes masivos de datos (por ejemplo, más de 1.8 mil millones de registros de edificaciones) distribuidos entre múltiples nodos.
 
-3. **Rendimiento:** Los índices espaciales R-tree aseguran consultas espaciales eficientes (complejidad O(log n)).
+3. **Rendimiento:**  
+   Las consultas geoespaciales se optimizan mediante **índices 2dsphere**, que permiten cálculos espaciales eficientes con complejidad aproximada **O(log n)**, mejorando la velocidad en búsquedas por ubicación y proximidad.
 
-4. **Funcionalidad:** 1000+ funciones de PostGIS permiten análisis espacial integral.
+4. **Funcionalidad:**  
+   MongoDB integra operaciones geoespaciales nativas como `$geoWithin`, `$near`, `$geoIntersects`, y `$geometry`, que permiten análisis de cobertura, proximidad y contención sin depender de herramientas externas.
 
-5. **Reproducibilidad:** Propiedades ACID y flujo de trabajo basado en SQL aseguran resultados reproducibles.
+5. **Reproducibilidad:**  
+   El uso de colecciones bien estructuradas y pipelines de agregación permite mantener un flujo de trabajo reproducible y fácilmente automatizable dentro del ecosistema NoSQL.
 
-6. **Integración:** Soporte nativo en el ecosistema geoespacial de Python (GeoPandas, QGIS).
+6. **Integración:**  
+   MongoDB se integra de forma nativa con el ecosistema de desarrollo de **Python** (mediante `pymongo`, `mongoengine` o `geopandas` con conectores), así como con herramientas de análisis y visualización geográfica como **QGIS** y **Kepler.gl**.
 
-7. **Extensibilidad:** Fácil agregar nuevos conjuntos de datos o modificar esquema a medida que evolucionan los requisitos.
+7. **Extensibilidad:**  
+   Su estructura flexible permite agregar nuevos conjuntos de datos, atributos o tipos de geometrías sin necesidad de redefinir el esquema general, adaptándose fácilmente a cambios en los requisitos del proyecto.
+
+---
 
 ### 7.2 Resultados Esperados
 
-Al completar la implementación:
+Al completar la implementación con **MongoDB**, se esperan los siguientes resultados:
 
-- **Base de Datos:** Instancia PostgreSQL+PostGIS completamente operacional con 170 municipios y millones de huellas de edificaciones
-- **Análisis:** Estadísticas a nivel municipal sobre conteos de edificaciones y áreas totales de techos
-- **Comparación:** Comparación cuantitativa de conjuntos de datos Microsoft vs Google
-- **Recomendaciones:** Recomendaciones basadas en datos para la UPME sobre municipios con mayor potencial solar
-- **Reproducibilidad:** Base de código completa y documentación para reproducir el análisis
+- **Base de Datos:**  
+  Instancia de **MongoDB** totalmente operacional que contenga información de los **170 municipios PDET**, incluyendo millones de registros de edificaciones con sus respectivas geometrías y atributos asociados (coordenadas, área de techo, orientación, etc.).
+
+- **Análisis:**  
+  Generación de estadísticas a nivel municipal mediante *pipelines* de agregación, incluyendo conteos de edificaciones, áreas totales de techos y distribución espacial de potencial solar.
+
+- **Comparación:**  
+  Evaluación comparativa entre los conjuntos de datos de **Microsoft Building Footprints** y **Google Open Buildings**, identificando diferencias en cobertura, precisión y densidad de edificaciones.
+
+- **Recomendaciones:**  
+  Elaboración de recomendaciones técnicas basadas en los resultados obtenidos, dirigidas a la **UPME**, destacando los municipios con **mayor potencial solar** y priorización para instalación de sistemas fotovoltaicos.
+
+- **Reproducibilidad:**  
+  Entrega de un repositorio con el **código fuente, scripts de carga, consultas MongoDB y documentación técnica**, garantizando la trazabilidad y posibilidad de reproducir el análisis completo en distintos entornos.
+
+---
+
 
 ### 7.3 Alineación con Objetivos de la UPME
 
-Este diseño apoya directamente los objetivos de la UPME:
+Este diseño basado en **MongoDB** apoya directamente los objetivos estratégicos de la **Unidad de Planeación Minero Energética (UPME)**, al proporcionar una infraestructura moderna, escalable y orientada a datos para la planeación energética del país:
 
-- **Planeación Estratégica:** Identifica municipios con mayor potencial de energía solar
-- **Decisiones Basadas en Datos:** Métricas cuantitativas para selección de sitios de prueba de concepto
-- **Transparencia:** Herramientas de código abierto y conjuntos de datos permiten verificación independiente
-- **Escalabilidad:** La metodología puede extenderse a todos los municipios colombianos
-- **Infraestructura Moderna:** Se alinea con las iniciativas de modernización tecnológica de la UPME
+- **Planeación Estratégica:**  
+  Permite identificar y priorizar los municipios con **mayor potencial de generación de energía solar**, facilitando la toma de decisiones informadas en la expansión de proyectos fotovoltaicos.
+
+- **Decisiones Basadas en Datos:**  
+  Genera métricas cuantitativas y reportes automatizados mediante consultas y agregaciones en MongoDB, que sirven como soporte técnico para la **selección de sitios piloto** y validación de escenarios energéticos.
+
+- **Transparencia:**  
+  El uso de **herramientas de código abierto**, bases de datos NoSQL y conjuntos de datos públicos garantiza **verificación independiente** y reproducibilidad de los resultados.
+
+- **Escalabilidad:**  
+  La arquitectura NoSQL permite procesar grandes volúmenes de datos geoespaciales y extender el análisis a **todos los municipios de Colombia**, sin comprometer el rendimiento ni la integridad de la información.
+
+- **Infraestructura Moderna:**  
+  Se alinea con las **iniciativas de modernización tecnológica** de la UPME, promoviendo la adopción de tecnologías basadas en la nube, análisis distribuido y gestión eficiente de datos masivos.
+
+---
+
 
 ### 7.4 Próximos Pasos
 
@@ -965,28 +1264,49 @@ Este diseño apoya directamente los objetivos de la UPME:
 ## 8. Referencias
 
 ### Literatura Académica
-1. **Performance analysis of MongoDB versus PostGIS/PostGreSQL databases for line intersection and point containment spatial queries.** Spatial Information Research (2016). https://doi.org/10.1007/s41324-016-0059-1
+1. **Performance analysis of MongoDB versus PostGIS/PostgreSQL databases for line intersection and point containment spatial queries.**  
+   *Spatial Information Research* (2016). [https://doi.org/10.1007/s41324-016-0059-1](https://doi.org/10.1007/s41324-016-0059-1)
 
-2. **MongoDB Vs PostgreSQL: A comparative study on performance aspects.** GeoInformatica (2020). https://doi.org/10.1007/s10707-020-00407-w
+2. **MongoDB Vs PostgreSQL: A comparative study on performance aspects.**  
+   *GeoInformatica* (2020). [https://doi.org/10.1007/s10707-020-00407-w](https://doi.org/10.1007/s10707-020-00407-w)
 
-3. **The Comparison of Processing Efficiency of Spatial Data for PostGIS and MongoDB Databases.** ResearchGate (2019).
+3. **The Comparison of Processing Efficiency of Spatial Data for PostGIS and MongoDB Databases.**  
+   *ResearchGate* (2019). [https://www.researchgate.net/publication/336289725](https://www.researchgate.net/publication/336289725)
 
 ### Conjuntos de Datos
-4. **Microsoft Global ML Building Footprints.** Microsoft Bing Maps. https://github.com/microsoft/GlobalMLBuildingFootprints
+4. **Microsoft Global ML Building Footprints.**  
+   Microsoft Bing Maps. [https://github.com/microsoft/GlobalMLBuildingFootprints](https://github.com/microsoft/GlobalMLBuildingFootprints)
 
-5. **Google Open Buildings v3.** Google Research. https://sites.research.google/gr/open-buildings/
+5. **Google Open Buildings v3.**  
+   Google Research. [https://sites.research.google/gr/open-buildings/](https://sites.research.google/gr/open-buildings/)
 
-6. **Marco Geoestadístico Nacional (MGN).** DANE Colombia. https://geoportal.dane.gov.co
+6. **Marco Geoestadístico Nacional (MGN).**  
+   DANE Colombia. [https://geoportal.dane.gov.co](https://geoportal.dane.gov.co)
 
 ### Documentación Técnica
-7. **PostGIS Documentation.** PostGIS 3.4 Manual. https://postgis.net/docs/
+7. **MongoDB Documentation.**  
+   MongoDB Manual 7.0. [https://www.mongodb.com/docs/manual/](https://www.mongodb.com/docs/manual/)
 
-8. **PostgreSQL Documentation.** PostgreSQL 16 Documentation. https://www.postgresql.org/docs/16/
+8. **PyMongo Documentation.**  
+   Official Python Driver for MongoDB. [https://pymongo.readthedocs.io](https://pymongo.readthedocs.io)
 
-9. **GeoPandas Documentation.** https://geopandas.org/
+9. **GeoPandas Documentation.**  
+   [https://geopandas.org/](https://geopandas.org/)
+
+10. **Folium Documentation.**  
+    [https://python-visualization.github.io/folium/](https://python-visualization.github.io/folium/)
+
+11. **Matplotlib Documentation.**  
+    [https://matplotlib.org/stable/contents.html](https://matplotlib.org/stable/contents.html)
+
 
 ### Estándares
 10. **OGC Simple Features Specification.** Open Geospatial Consortium. https://www.ogc.org/standards/sfa
+
+---
+
+### Estándares
+10. **OGC Simple Features Specification.** Open Geospatial Consortium. [https://www.ogc.org/standards/sfa](https://www.ogc.org/standards/sfa)
 
 ---
 
@@ -997,25 +1317,24 @@ Este diseño apoya directamente los objetivos de la UPME:
 ```yaml
 database:
   host: localhost
-  port: 5432
-  database: pdet_solar_analysis
-  schema: pdet_solar
+  port: 27017
+  name: pdet_solar_analysis
   user: pdet_user
-  # La contraseña debe estar en archivo .env, no comprometida en git
+  # La contraseña debe estar en el archivo .env (no debe subirse a git)
 
 connection_pool:
   min_size: 2
   max_size: 10
 
 spatial:
-  default_srid: 4326  # WGS84
-  colombia_srid: 3116  # MAGNA-SIRGAS Colombia
+  default_crs: EPSG:4326   # WGS84
+  colombia_crs: EPSG:3116  # MAGNA-SIRGAS Colombia
 ```
 
 **Archivo:** `.env.example`
 
 ```bash
-# Credenciales de base de datos
+# Credenciales de base de datos MongoDB
 DB_PASSWORD=tu_contraseña_segura_aquí
 
 # Rutas de datos
@@ -1033,81 +1352,70 @@ RESULTS_PATH=./results
 ```python
 """
 Módulo de conexión a base de datos para el proyecto de Análisis Solar PDET.
-Maneja conexiones PostgreSQL/PostGIS.
+Maneja conexiones MongoDB.
 """
 
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.pool import NullPool
+from pymongo import MongoClient
 from dotenv import load_dotenv
 import yaml
 
 # Cargar variables de entorno
 load_dotenv()
 
-# Cargar configuración de base de datos
+# Cargar configuración desde archivo YAML
 with open('config/database.yml', 'r') as f:
     config = yaml.safe_load(f)
 
 def get_connection_string():
     """
-    Generar cadena de conexión PostgreSQL desde configuración.
+    Generar cadena de conexión MongoDB desde configuración.
 
     Returns:
-        str: Cadena de conexión SQLAlchemy
+        str: URI de conexión MongoDB
     """
     db_config = config['database']
     password = os.getenv('DB_PASSWORD')
 
-    return (f"postgresql://{db_config['user']}:{password}"
-            f"@{db_config['host']}:{db_config['port']}"
-            f"/{db_config['database']}")
+    # Conexión local o remota
+    return (f"mongodb://{db_config['user']}:{password}"
+            f"@{db_config['host']}:{db_config['port']}/"
+            f"{db_config['name']}")
 
-def create_db_engine(echo=False):
+def create_mongo_client():
     """
-    Crear motor SQLAlchemy para conexiones a base de datos.
-
-    Args:
-        echo (bool): Si se deben mostrar sentencias SQL (para depuración)
+    Crear cliente MongoDB.
 
     Returns:
-        sqlalchemy.engine.Engine: Motor de base de datos
+        pymongo.MongoClient: Cliente de base de datos MongoDB
     """
     conn_string = get_connection_string()
-    engine = create_engine(
-        conn_string,
-        echo=echo,
-        pool_size=config['connection_pool']['max_size'],
-        max_overflow=0
-    )
-    return engine
+    client = MongoClient(conn_string,
+                         minPoolSize=config['connection_pool']['min_size'],
+                         maxPoolSize=config['connection_pool']['max_size'])
+    return client
 
 def test_connection():
     """
-    Probar conexión a base de datos e instalación de PostGIS.
+    Probar conexión a MongoDB y listar bases de datos.
 
     Returns:
         bool: True si la conexión fue exitosa
     """
     try:
-        engine = create_db_engine()
-        with engine.connect() as conn:
-            # Probar PostGIS
-            result = conn.execute("SELECT PostGIS_Version();")
-            version = result.fetchone()[0]
-            print(f"✓ Conectado a PostgreSQL")
-            print(f"✓ Versión de PostGIS: {version}")
+        client = create_mongo_client()
+        db_list = client.list_database_names()
+        print("✓ Conectado exitosamente a MongoDB")
+        print(f"✓ Bases de datos disponibles: {db_list}")
 
-            # Probar esquema
-            result = conn.execute(
-                f"SELECT schema_name FROM information_schema.schemata "
-                f"WHERE schema_name = '{config['database']['schema']}';"
-            )
-            if result.fetchone():
-                print(f"✓ Esquema '{config['database']['schema']}' existe")
-            else:
-                print(f"✗ Esquema '{config['database']['schema']}' no encontrado")
-                return False
+        db = client[config['database']['name']]
+        print(f"✓ Base de datos activa: {db.name}")
+
+        # Crear colección de prueba
+        db['test_connection'].insert_one({"status": "ok"})
+        print("✓ Operación de escritura de prueba completada")
+        db['test_connection'].drop()
+        print("✓ Colección temporal eliminada")
 
         return True
     except Exception as e:
@@ -1115,7 +1423,7 @@ def test_connection():
         return False
 
 if __name__ == "__main__":
-    # Probar conexión cuando el script se ejecuta directamente
+    # Probar conexión cuando se ejecuta directamente
     test_connection()
 ```
 
@@ -1125,6 +1433,6 @@ if __name__ == "__main__":
 
 ---
 
-**Preparado por:** Alejandro Pinzon Fajardo
+**Preparado por:** Alejandro Pinzon Fajardo , Juan Jose Bermudez
 **Fecha:** 22 de Octubre de 2025
 **Versión:** 1.0
