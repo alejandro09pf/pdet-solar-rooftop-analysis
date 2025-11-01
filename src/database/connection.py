@@ -1,13 +1,13 @@
 """
 Database connection module for PDET Solar Analysis project.
-Handles PostgreSQL/PostGIS connections using SQLAlchemy.
+Handles MongoDB connections with geospatial support using PyMongo.
 """
 
 import os
 import sys
 from pathlib import Path
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import QueuePool
+from pymongo import MongoClient, GEOSPHERE
+from pymongo.errors import ConnectionFailure, OperationFailure
 from dotenv import load_dotenv
 import yaml
 
@@ -29,7 +29,7 @@ def load_config():
     if not CONFIG_FILE.exists():
         raise FileNotFoundError(
             f"Configuration file not found: {CONFIG_FILE}\n"
-            f"Please create config/database.yml based on config/database.yml.example"
+            f"Please create config/database.yml based on the deliverable 1 documentation"
         )
 
     with open(CONFIG_FILE, 'r') as f:
@@ -40,64 +40,68 @@ def load_config():
 
 def get_connection_string(config=None, include_password=True):
     """
-    Generate PostgreSQL connection string from configuration.
+    Generate MongoDB connection string from configuration.
 
     Args:
         config (dict, optional): Database configuration. If None, loads from file.
         include_password (bool): Whether to include password in connection string
 
     Returns:
-        str: SQLAlchemy connection string
+        str: MongoDB connection URI
 
-    Raises:
-        ValueError: If DB_PASSWORD environment variable is not set
+    Note:
+        For local development without authentication, password is optional.
     """
     if config is None:
         config = load_config()
 
     db_config = config['database']
 
-    # Get password from environment variable
+    # Get password from environment variable (optional for local dev)
     password = os.getenv('DB_PASSWORD')
-    if not password and include_password:
-        raise ValueError(
-            "DB_PASSWORD environment variable not set.\n"
-            "Please set it in your .env file or environment."
-        )
 
     # Build connection string
-    if include_password:
+    if db_config.get('user') and password and include_password:
+        # With authentication
+        auth_source = db_config.get('auth_source', 'admin')
         conn_string = (
-            f"postgresql://{db_config['user']}:{password}"
+            f"mongodb://{db_config['user']}:{password}"
             f"@{db_config['host']}:{db_config['port']}"
-            f"/{db_config['database']}"
+            f"/{db_config['name']}?authSource={auth_source}"
+        )
+    elif db_config.get('user') and not include_password:
+        # Masked password for display
+        conn_string = (
+            f"mongodb://{db_config['user']}:****"
+            f"@{db_config['host']}:{db_config['port']}"
+            f"/{db_config['name']}"
         )
     else:
+        # Without authentication (local development)
         conn_string = (
-            f"postgresql://{db_config['user']}:****"
-            f"@{db_config['host']}:{db_config['port']}"
-            f"/{db_config['database']}"
+            f"mongodb://{db_config['host']}:{db_config['port']}"
+            f"/{db_config['name']}"
         )
 
     return conn_string
 
 
-def create_db_engine(echo=False, config=None):
+def create_mongo_client(config=None):
     """
-    Create SQLAlchemy engine for database connections.
+    Create MongoDB client with connection pooling.
 
     Args:
-        echo (bool): Whether to echo SQL statements (for debugging)
         config (dict, optional): Database configuration. If None, loads from file.
 
     Returns:
-        sqlalchemy.engine.Engine: Database engine with connection pooling
+        pymongo.MongoClient: MongoDB client with connection pool
 
     Example:
-        >>> engine = create_db_engine(echo=True)
-        >>> with engine.connect() as conn:
-        ...     result = conn.execute(text("SELECT PostGIS_Version();"))
-        ...     print(result.fetchone())
+        >>> client = create_mongo_client()
+        >>> db = client['pdet_solar_analysis']
+        >>> municipalities = db['pdet_municipalities']
+        >>> count = municipalities.count_documents({})
+        >>> print(f"Total municipalities: {count}")
     """
     if config is None:
         config = load_config()
@@ -105,29 +109,52 @@ def create_db_engine(echo=False, config=None):
     conn_string = get_connection_string(config, include_password=True)
     pool_config = config.get('connection_pool', {})
 
-    engine = create_engine(
+    client = MongoClient(
         conn_string,
-        echo=echo,
-        poolclass=QueuePool,
-        pool_size=pool_config.get('max_size', 10),
-        max_overflow=pool_config.get('overflow', 5),
-        pool_pre_ping=True,  # Verify connections before using
-        pool_recycle=3600    # Recycle connections after 1 hour
+        minPoolSize=pool_config.get('min_size', 2),
+        maxPoolSize=pool_config.get('max_size', 10),
+        serverSelectionTimeoutMS=pool_config.get('timeout', 30) * 1000,
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000
     )
 
-    return engine
+    return client
+
+
+def get_database(config=None):
+    """
+    Get database object from MongoDB client.
+
+    Args:
+        config (dict, optional): Database configuration. If None, loads from file.
+
+    Returns:
+        pymongo.database.Database: MongoDB database object
+
+    Example:
+        >>> db = get_database()
+        >>> print(f"Database: {db.name}")
+        >>> print(f"Collections: {db.list_collection_names()}")
+    """
+    if config is None:
+        config = load_config()
+
+    client = create_mongo_client(config)
+    db = client[config['database']['name']]
+
+    return db
 
 
 def test_connection(config=None, verbose=True):
     """
-    Test database connection and PostGIS installation.
+    Test database connection and MongoDB geospatial capabilities.
 
     Args:
         config (dict, optional): Database configuration. If None, loads from file.
         verbose (bool): Whether to print detailed information
 
     Returns:
-        bool: True if connection successful and PostGIS is available
+        bool: True if connection successful and geospatial support is available
 
     Example:
         >>> if test_connection():
@@ -137,88 +164,62 @@ def test_connection(config=None, verbose=True):
         if config is None:
             config = load_config()
 
-        engine = create_db_engine(config=config)
-        schema = config['database']['schema']
+        client = create_mongo_client(config)
+        db_name = config['database']['name']
+        db = client[db_name]
 
-        with engine.connect() as conn:
-            # Test basic connection
-            if verbose:
-                print("=" * 60)
-                print("Database Connection Test")
-                print("=" * 60)
+        if verbose:
+            print("=" * 60)
+            print("MongoDB Connection Test")
+            print("=" * 60)
 
-            # Test PostgreSQL version
-            result = conn.execute(text("SELECT version();"))
-            pg_version = result.fetchone()[0]
-            if verbose:
-                print(f"✓ PostgreSQL: {pg_version.split(',')[0]}")
+        # Test basic connection
+        client.admin.command('ping')
+        if verbose:
+            print(f"✓ Connected to MongoDB")
 
-            # Test PostGIS version
-            result = conn.execute(text("SELECT PostGIS_Version();"))
-            postgis_version = result.fetchone()[0]
-            if verbose:
-                print(f"✓ PostGIS Version: {postgis_version}")
+        # Get server info
+        server_info = client.server_info()
+        if verbose:
+            print(f"✓ MongoDB Version: {server_info['version']}")
+            print(f"✓ Database: {db_name}")
 
-            # Test PostGIS full info
-            result = conn.execute(text("SELECT PostGIS_Full_Version();"))
-            postgis_full = result.fetchone()[0]
-            if verbose:
-                print(f"✓ PostGIS Full Info:")
-                for line in postgis_full.split():
-                    if line.strip():
-                        print(f"  {line}")
-
-            # Test schema existence
-            result = conn.execute(text(
-                f"SELECT schema_name FROM information_schema.schemata "
-                f"WHERE schema_name = :schema;"
-            ), {"schema": schema})
-
-            if result.fetchone():
-                if verbose:
-                    print(f"✓ Schema '{schema}' exists")
-
-                # Check tables in schema
-                result = conn.execute(text(
-                    f"SELECT table_name FROM information_schema.tables "
-                    f"WHERE table_schema = :schema "
-                    f"ORDER BY table_name;"
-                ), {"schema": schema})
-
-                tables = [row[0] for row in result.fetchall()]
-                if tables:
-                    if verbose:
-                        print(f"✓ Tables in schema '{schema}':")
-                        for table in tables:
-                            print(f"  - {table}")
-                else:
-                    if verbose:
-                        print(f"⚠ No tables found in schema '{schema}'")
-                        print("  Run SQL scripts to create tables.")
-
+        # List collections
+        collections = db.list_collection_names()
+        if verbose:
+            if collections:
+                print(f"\n✓ Collections in database:")
+                for coll_name in collections:
+                    coll = db[coll_name]
+                    count = coll.count_documents({})
+                    indexes = coll.list_indexes()
+                    index_names = [idx['name'] for idx in indexes]
+                    print(f"  - {coll_name}: {count:,} documents")
+                    if index_names:
+                        print(f"    Indexes: {', '.join(index_names)}")
             else:
-                if verbose:
-                    print(f"✗ Schema '{schema}' not found")
-                    print(f"  Please create schema by running:")
-                    print(f"  psql -d {config['database']['database']} -f deliverables/deliverable_1/sql_scripts/01_create_schema.sql")
-                return False
+                print(f"\n⚠ No collections found in database '{db_name}'")
+                print("  Collections will be created when data is loaded.")
 
-            # Test spatial reference systems
-            result = conn.execute(text(
-                "SELECT srid, auth_name, auth_srid, srtext "
-                "FROM spatial_ref_sys "
-                "WHERE srid IN (4326, 3116) "
-                "ORDER BY srid;"
-            ))
-            if verbose:
-                print("\n✓ Available Spatial Reference Systems:")
-                for row in result.fetchall():
-                    print(f"  SRID {row[0]}: {row[1]}:{row[2]}")
+        # Check geospatial index support
+        if verbose:
+            print(f"\n✓ Geospatial Support:")
+            print(f"  - 2dsphere indexes: Supported")
+            print(f"  - GeoJSON format: Supported")
+            print(f"  - Spatial operators: $geoWithin, $geoIntersects, $near, $nearSphere")
 
-            if verbose:
-                print("=" * 60)
-                print("✓ Connection test PASSED")
-                print("=" * 60)
+        # Test write permission
+        test_coll = db['_connection_test']
+        test_doc = {"test": "connection", "status": "ok"}
+        result = test_coll.insert_one(test_doc)
+        test_coll.delete_one({"_id": result.inserted_id})
+        if verbose:
+            print(f"\n✓ Write permission: OK")
+
+        if verbose:
+            print("=" * 60)
+            print("✓ Connection test PASSED")
+            print("=" * 60)
 
         return True
 
@@ -227,123 +228,202 @@ def test_connection(config=None, verbose=True):
             print(f"\n✗ Configuration Error: {e}")
         return False
 
+    except ConnectionFailure as e:
+        if verbose:
+            print(f"\n✗ Connection test FAILED")
+            print(f"Error: Cannot connect to MongoDB server")
+            print(f"Details: {e}")
+            print("\nTroubleshooting:")
+            print("1. Check if MongoDB is running:")
+            print("   - Windows: Check Services or run 'mongod --version'")
+            print("   - Linux/Mac: Run 'sudo systemctl status mongod'")
+            print("2. Verify connection settings in config/database.yml")
+            print("3. Check if MongoDB is listening on the correct host:port")
+            print("4. Verify database credentials in .env file (if using auth)")
+        return False
+
+    except OperationFailure as e:
+        if verbose:
+            print(f"\n✗ Connection test FAILED")
+            print(f"Error: Authentication failed or insufficient permissions")
+            print(f"Details: {e}")
+            print("\nTroubleshooting:")
+            print("1. Verify DB_PASSWORD in .env file")
+            print("2. Check user permissions in MongoDB")
+            print("3. Ensure auth_source is correct in config/database.yml")
+        return False
+
     except Exception as e:
         if verbose:
             print(f"\n✗ Connection test FAILED")
             print(f"Error: {type(e).__name__}: {e}")
             print("\nTroubleshooting:")
-            print("1. Check if PostgreSQL is running")
-            print("2. Verify database credentials in .env file")
-            print("3. Ensure PostGIS extension is installed")
-            print("4. Check config/database.yml configuration")
+            print("1. Check MongoDB server logs")
+            print("2. Verify config/database.yml configuration")
+            print("3. Check .env file for correct credentials")
         return False
 
 
-def get_table_info(table_name, schema='pdet_solar'):
+def create_spatial_indexes(collection_name, geometry_field='geom', config=None, verbose=True):
     """
-    Get information about a specific table.
+    Create 2dsphere spatial index on a collection.
 
     Args:
-        table_name (str): Name of the table
-        schema (str): Schema name (default: 'pdet_solar')
+        collection_name (str): Name of the collection
+        geometry_field (str): Name of the geometry field (default: 'geom')
+        config (dict, optional): Database configuration
+        verbose (bool): Whether to print progress
 
     Returns:
-        dict: Table information including row count, columns, indexes
+        str: Name of created index
 
     Example:
-        >>> info = get_table_info('pdet_municipalities')
-        >>> print(f"Rows: {info['row_count']}")
+        >>> create_spatial_indexes('pdet_municipalities', 'geom')
+        'geom_2dsphere'
     """
-    engine = create_db_engine()
+    if config is None:
+        config = load_config()
 
-    with engine.connect() as conn:
-        # Get row count
-        result = conn.execute(text(
-            f"SELECT COUNT(*) FROM {schema}.{table_name};"
-        ))
-        row_count = result.fetchone()[0]
+    db = get_database(config)
+    collection = db[collection_name]
 
-        # Get column info
-        result = conn.execute(text(
-            f"SELECT column_name, data_type, character_maximum_length "
-            f"FROM information_schema.columns "
-            f"WHERE table_schema = :schema AND table_name = :table "
-            f"ORDER BY ordinal_position;"
-        ), {"schema": schema, "table": table_name})
-
-        columns = [
-            {
-                'name': row[0],
-                'type': row[1],
-                'max_length': row[2]
-            }
-            for row in result.fetchall()
-        ]
-
-        # Get indexes
-        result = conn.execute(text(
-            f"SELECT indexname, indexdef "
-            f"FROM pg_indexes "
-            f"WHERE schemaname = :schema AND tablename = :table "
-            f"ORDER BY indexname;"
-        ), {"schema": schema, "table": table_name})
-
-        indexes = [
-            {'name': row[0], 'definition': row[1]}
-            for row in result.fetchall()
-        ]
-
-    return {
-        'table_name': table_name,
-        'schema': schema,
-        'row_count': row_count,
-        'columns': columns,
-        'indexes': indexes
-    }
-
-
-def execute_sql_file(sql_file_path, verbose=True):
-    """
-    Execute SQL commands from a file.
-
-    Args:
-        sql_file_path (str or Path): Path to SQL file
-        verbose (bool): Whether to print execution details
-
-    Returns:
-        bool: True if execution successful
-
-    Example:
-        >>> execute_sql_file('deliverables/deliverable_1/sql_scripts/01_create_schema.sql')
-    """
-    sql_file = Path(sql_file_path)
-
-    if not sql_file.exists():
-        raise FileNotFoundError(f"SQL file not found: {sql_file}")
-
-    with open(sql_file, 'r', encoding='utf-8') as f:
-        sql_content = f.read()
-
-    engine = create_db_engine()
+    # Create 2dsphere index
+    index_name = f"{geometry_field}_2dsphere"
 
     try:
-        with engine.connect() as conn:
-            if verbose:
-                print(f"Executing SQL file: {sql_file}")
+        result = collection.create_index(
+            [(geometry_field, GEOSPHERE)],
+            name=index_name
+        )
 
-            # Execute SQL (note: some statements may need to be split)
-            conn.execute(text(sql_content))
-            conn.commit()
+        if verbose:
+            print(f"✓ Created 2dsphere index '{result}' on {collection_name}.{geometry_field}")
 
-            if verbose:
-                print(f"✓ SQL file executed successfully")
-
-        return True
+        return result
 
     except Exception as e:
         if verbose:
-            print(f"✗ Error executing SQL file: {e}")
-        return False
+            print(f"✗ Failed to create index: {e}")
+        raise
+
+
+def get_collection_info(collection_name, config=None):
+    """
+    Get information about a specific collection.
+
+    Args:
+        collection_name (str): Name of the collection
+        config (dict, optional): Database configuration
+
+    Returns:
+        dict: Collection information including document count, indexes, sample doc
+
+    Example:
+        >>> info = get_collection_info('pdet_municipalities')
+        >>> print(f"Documents: {info['document_count']}")
+        >>> print(f"Indexes: {info['indexes']}")
+    """
+    if config is None:
+        config = load_config()
+
+    db = get_database(config)
+    collection = db[collection_name]
+
+    # Get document count
+    doc_count = collection.count_documents({})
+
+    # Get indexes
+    indexes = list(collection.list_indexes())
+    index_info = [
+        {
+            'name': idx['name'],
+            'keys': idx['key'],
+            'unique': idx.get('unique', False)
+        }
+        for idx in indexes
+    ]
+
+    # Get sample document
+    sample = collection.find_one({})
+
+    # Get collection stats
+    stats = db.command("collStats", collection_name)
+
+    return {
+        'collection_name': collection_name,
+        'document_count': doc_count,
+        'indexes': index_info,
+        'size_bytes': stats.get('size', 0),
+        'storage_size_bytes': stats.get('storageSize', 0),
+        'sample_document': sample
+    }
+
+
+def initialize_collections(config=None, verbose=True):
+    """
+    Initialize all collections defined in configuration with appropriate indexes.
+
+    Args:
+        config (dict, optional): Database configuration
+        verbose (bool): Whether to print progress
+
+    Returns:
+        dict: Status of initialization for each collection
+
+    Example:
+        >>> result = initialize_collections()
+        >>> print(result)
+    """
+    if config is None:
+        config = load_config()
+
+    db = get_database(config)
+    collections_config = config.get('collections', {})
+
+    results = {}
+
+    if verbose:
+        print("Initializing collections...")
+
+    for coll_key, coll_name in collections_config.items():
+        try:
+            # Create collection (MongoDB creates implicitly, but we can be explicit)
+            if coll_name not in db.list_collection_names():
+                db.create_collection(coll_name)
+                if verbose:
+                    print(f"✓ Created collection: {coll_name}")
+            else:
+                if verbose:
+                    print(f"  Collection already exists: {coll_name}")
+
+            # Create spatial index for collections with geometry
+            if 'municipalities' in coll_key or 'buildings' in coll_key:
+                create_spatial_indexes(coll_name, 'geom', config, verbose=False)
+                if verbose:
+                    print(f"✓ Created geospatial index on {coll_name}.geom")
+
+            # Create additional indexes based on collection type
+            collection = db[coll_name]
+            if 'municipalities' in coll_key:
+                collection.create_index('muni_code', unique=True)
+                collection.create_index('dept_code')
+                if verbose:
+                    print(f"✓ Created indexes on {coll_name}: muni_code, dept_code")
+
+            elif 'buildings' in coll_key:
+                collection.create_index('muni_code')
+                collection.create_index('area_m2')
+                if verbose:
+                    print(f"✓ Created indexes on {coll_name}: muni_code, area_m2")
+
+            results[coll_name] = "success"
+
+        except Exception as e:
+            if verbose:
+                print(f"✗ Error initializing {coll_name}: {e}")
+            results[coll_name] = f"error: {e}"
+
+    return results
 
 
 if __name__ == "__main__":
@@ -352,16 +432,25 @@ if __name__ == "__main__":
 
     Usage:
         python src/database/connection.py
+        python src/database/connection.py --quiet
+        python src/database/connection.py --init
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description='Test database connection')
+    parser = argparse.ArgumentParser(description='Test MongoDB connection and initialize collections')
     parser.add_argument('--quiet', action='store_true',
                         help='Suppress output (only return exit code)')
+    parser.add_argument('--init', action='store_true',
+                        help='Initialize collections with indexes')
 
     args = parser.parse_args()
 
-    success = test_connection(verbose=not args.quiet)
+    if args.init:
+        success = test_connection(verbose=not args.quiet)
+        if success:
+            initialize_collections(verbose=not args.quiet)
+    else:
+        success = test_connection(verbose=not args.quiet)
 
     # Exit with appropriate code
     sys.exit(0 if success else 1)
