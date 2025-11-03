@@ -136,7 +136,7 @@ Este proyecto se desarrolla como parte de una tarea académica para el curso de 
 
 ## Colaboradores
 
-- Alejandro Pinzon Fajardo, Juan Manuel Díaz
+- Alejandro Pinzon Fajardo, Juan Manuel Díaz, Victor Peñaranda Florez
 
 ## Contacto
 
