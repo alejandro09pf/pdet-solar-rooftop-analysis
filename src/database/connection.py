@@ -1,8 +1,3 @@
-"""
-Database connection module for PDET Solar Analysis project.
-Handles MongoDB connections with geospatial support using PyMongo.
-"""
-
 import os
 import sys
 from pathlib import Path
@@ -11,10 +6,8 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 from dotenv import load_dotenv
 import yaml
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Get project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 CONFIG_FILE = PROJECT_ROOT / 'config' / 'database.yml'
 
@@ -33,8 +26,11 @@ def load_config():
         )
 
     with open(CONFIG_FILE, 'r') as f:
-        config = yaml.safe_load(f)
-
+        template = f.read()
+        for key, value in os.environ.items():
+            template = template.replace(f"${{{key}}}", value)
+        config = yaml.safe_load(template)
+        
     return config
 
 
@@ -55,32 +51,26 @@ def get_connection_string(config=None, include_password=True):
     if config is None:
         config = load_config()
 
-    db_config = config['database']
+    env = os.getenv('ENVIRONMENT', 'development')
+    db_config = config[env]['mongodb']
 
-    # Get password from environment variable (optional for local dev)
-    password = os.getenv('DB_PASSWORD')
-
-    # Build connection string
-    if db_config.get('user') and password and include_password:
-        # With authentication
+    if db_config.get('username') and db_config.get('password'):
         auth_source = db_config.get('auth_source', 'admin')
         conn_string = (
-            f"mongodb://{db_config['user']}:{password}"
+            f"mongodb://{db_config['username']}:{db_config['password']}"
             f"@{db_config['host']}:{db_config['port']}"
-            f"/{db_config['name']}?authSource={auth_source}"
+            f"/{db_config['database']}?authSource={auth_source}"
         )
-    elif db_config.get('user') and not include_password:
-        # Masked password for display
+    elif db_config.get('username') and not include_password:
         conn_string = (
-            f"mongodb://{db_config['user']}:****"
+            f"mongodb://{db_config['username']}:****"
             f"@{db_config['host']}:{db_config['port']}"
-            f"/{db_config['name']}"
+            f"/{db_config['database']}"
         )
     else:
-        # Without authentication (local development)
         conn_string = (
             f"mongodb://{db_config['host']}:{db_config['port']}"
-            f"/{db_config['name']}"
+            f"/{db_config['database']}"
         )
 
     return conn_string
@@ -139,8 +129,10 @@ def get_database(config=None):
     if config is None:
         config = load_config()
 
+    env = os.getenv('ENVIRONMENT', 'development')
+    db_config = config[env]['mongodb']
     client = create_mongo_client(config)
-    db = client[config['database']['name']]
+    db = client[db_config['database']]
 
     return db
 
@@ -163,9 +155,11 @@ def test_connection(config=None, verbose=True):
     try:
         if config is None:
             config = load_config()
-
+        
+        env = os.getenv('ENVIRONMENT', 'development')
+        db_config = config[env]['mongodb']
         client = create_mongo_client(config)
-        db_name = config['database']['name']
+        db_name = db_config['database']
         db = client[db_name]
 
         if verbose:
@@ -173,18 +167,15 @@ def test_connection(config=None, verbose=True):
             print("MongoDB Connection Test")
             print("=" * 60)
 
-        # Test basic connection
         client.admin.command('ping')
         if verbose:
             print(f"✓ Connected to MongoDB")
 
-        # Get server info
         server_info = client.server_info()
         if verbose:
             print(f"✓ MongoDB Version: {server_info['version']}")
             print(f"✓ Database: {db_name}")
 
-        # List collections
         collections = db.list_collection_names()
         if verbose:
             if collections:
@@ -201,14 +192,12 @@ def test_connection(config=None, verbose=True):
                 print(f"\n⚠ No collections found in database '{db_name}'")
                 print("  Collections will be created when data is loaded.")
 
-        # Check geospatial index support
         if verbose:
             print(f"\n✓ Geospatial Support:")
             print(f"  - 2dsphere indexes: Supported")
             print(f"  - GeoJSON format: Supported")
             print(f"  - Spatial operators: $geoWithin, $geoIntersects, $near, $nearSphere")
 
-        # Test write permission
         test_coll = db['_connection_test']
         test_doc = {"test": "connection", "status": "ok"}
         result = test_coll.insert_one(test_doc)
@@ -287,7 +276,6 @@ def create_spatial_indexes(collection_name, geometry_field='geom', config=None, 
     db = get_database(config)
     collection = db[collection_name]
 
-    # Create 2dsphere index
     index_name = f"{geometry_field}_2dsphere"
 
     try:
@@ -329,10 +317,8 @@ def get_collection_info(collection_name, config=None):
     db = get_database(config)
     collection = db[collection_name]
 
-    # Get document count
     doc_count = collection.count_documents({})
 
-    # Get indexes
     indexes = list(collection.list_indexes())
     index_info = [
         {
@@ -343,10 +329,8 @@ def get_collection_info(collection_name, config=None):
         for idx in indexes
     ]
 
-    # Get sample document
     sample = collection.find_one({})
 
-    # Get collection stats
     stats = db.command("collStats", collection_name)
 
     return {
@@ -387,7 +371,6 @@ def initialize_collections(config=None, verbose=True):
 
     for coll_key, coll_name in collections_config.items():
         try:
-            # Create collection (MongoDB creates implicitly, but we can be explicit)
             if coll_name not in db.list_collection_names():
                 db.create_collection(coll_name)
                 if verbose:
@@ -396,13 +379,11 @@ def initialize_collections(config=None, verbose=True):
                 if verbose:
                     print(f"  Collection already exists: {coll_name}")
 
-            # Create spatial index for collections with geometry
             if 'municipalities' in coll_key or 'buildings' in coll_key:
                 create_spatial_indexes(coll_name, 'geom', config, verbose=False)
                 if verbose:
                     print(f"✓ Created geospatial index on {coll_name}.geom")
 
-            # Create additional indexes based on collection type
             collection = db[coll_name]
             if 'municipalities' in coll_key:
                 collection.create_index('muni_code', unique=True)
@@ -452,5 +433,4 @@ if __name__ == "__main__":
     else:
         success = test_connection(verbose=not args.quiet)
 
-    # Exit with appropriate code
     sys.exit(0 if success else 1)
