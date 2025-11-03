@@ -71,6 +71,55 @@ Para instrucciones paso a paso completas, ver: **[GUIA_PASO_A_PASO.md](./GUIA_PA
 
 ---
 
+## Descarga y preparación del dataset
+
+1. **Descarga el shapefile oficial de municipios DANE:**
+   - Ve a: https://geoportal.dane.gov.co
+   - Busca y descarga el archivo “Marco Geoestadístico Nacional (MGN)” (usualmente llamado `MGN_MPIO_POLITICO.zip`).
+   - Extrae el contenido en: `data/raw/dane/MGN/`
+   - Asegúrate de incluir todos los archivos del shapefile: `.shp`, `.dbf`, `.shx`, `.prj`, etc.
+
+2. **Descarga la lista oficial de municipios PDET:**
+   - Ve a: https://centralpdet.renovacionterritorio.gov.co
+   - Descarga la lista y guárdala como `data/processed/pdet_municipalities_list.csv` (ya incluida en el repo).
+
+---
+
+## Carga y procesamiento de datos
+
+1. **Verifica la conexión a MongoDB:**
+   ```bash
+   python src/data_loaders/load_pdet_simple.py --step 1
+   ```
+
+2. **Procesa el shapefile y filtra municipios PDET:**
+   ```bash
+   python src/data_loaders/load_pdet_simple.py --step 2 --shapefile data/raw/dane/MGN/MGN_ADM_MPIO_GRAFICO.shp
+   ```
+   Esto generará el archivo `data/processed/pdet_municipalities_ready.json`.
+
+3. **Carga los datos procesados a MongoDB:**
+   ```bash
+   python src/data_loaders/load_pdet_simple.py --step 3
+   ```
+
+4. **Valida la carga y revisa estadísticas:**
+   ```bash
+   python src/data_loaders/load_pdet_simple.py --step 4
+   ```
+
+---
+
+## Visualización de los datos
+
+- Abre y ejecuta el notebook:
+  ```
+  notebooks/visualizacion_pdet.ipynb
+  ```
+  Aquí verás histogramas, boxplots y gráficos de barras de los municipios PDET.
+
+---
+
 ## Estructura de Datos en MongoDB
 
 ### Colección: `pdet_municipalities`
