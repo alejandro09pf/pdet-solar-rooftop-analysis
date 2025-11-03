@@ -1,0 +1,12 @@
+{
+    "total_docs": 170,
+    "null_values": {
+        "divipola_code": 0,
+        "departamento": 0,
+        "municipio": 0,
+        "region_pdet": 0,
+        "subregion_pdet": 0
+    },
+    "duplicate_codes": "Sin columna muni_code",
+    "invalid_geometries": "Sin geometría"
+}
