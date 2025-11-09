@@ -1,0 +1,50 @@
+[
+  {
+    "name": "_id_",
+    "key": {
+      "_id": 1
+    },
+    "unique": false,
+    "sparse": false
+  },
+  {
+    "name": "geom_2dsphere",
+    "key": {
+      "geom": "2dsphere"
+    },
+    "unique": false,
+    "sparse": false
+  },
+  {
+    "name": "muni_code_1",
+    "key": {
+      "muni_code": 1
+    },
+    "unique": true,
+    "sparse": false
+  },
+  {
+    "name": "dept_code_1",
+    "key": {
+      "dept_code": 1
+    },
+    "unique": false,
+    "sparse": false
+  },
+  {
+    "name": "pdet_region_1",
+    "key": {
+      "pdet_region": 1
+    },
+    "unique": false,
+    "sparse": false
+  },
+  {
+    "name": "pdet_subregion_1",
+    "key": {
+      "pdet_subregion": 1
+    },
+    "unique": false,
+    "sparse": false
+  }
+]

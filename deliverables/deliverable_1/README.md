@@ -1,7 +1,8 @@
 # Entregable 1: Diseño de Esquema de Base de Datos NoSQL y Plan de Implementación
 
 **Fecha de Entrega:** 27 de Octubre de 2025, 2:00 PM
-**Estado:**  Completado
+**Estado:** ✅ Completado
+**Versión:** 2.0 (Actualizado 9 Nov 2025)
 
 ---
 
@@ -9,9 +10,9 @@
 
 Este entregable contiene:
 
-1. **[deliverable_1_report.md](deliverable_1_report.md)** - Reporte técnico completo (60+ páginas)
+1. **[deliverable_1_report.md](deliverable_1_report.md)** - Reporte técnico completo
    - Resumen Ejecutivo
-   - Selección de Tecnología de Base de Datos (PostgreSQL + PostGIS)
+   - Selección de Tecnología de Base de Datos (MongoDB)
    - Modelado de Datos
    - Diseño de Esquema
    - Estrategia de Indexación Espacial
@@ -19,49 +20,49 @@ Este entregable contiene:
    - Justificación y Conclusiones
    - Referencias
 
-2. **Scripts SQL** (`sql_scripts/`)
-   - `01_create_schema.sql` - Creación completa del esquema de base de datos
-   - `02_useful_queries.sql` - Colección de consultas de análisis útiles
+2. **Scripts MongoDB** (`mongodb_scripts/`)
+   - `01_initialize_database.js` - Inicialización de colecciones, índices y validación
+   - `02_useful_queries.js` - Colección de consultas de análisis útiles
+   - `README.md` - Documentación de scripts
 
 3. **Módulos Python** (en `src/database/`)
-   - `connection.py` - Módulo de conexión a base de datos
+   - `connection.py` - Módulo de conexión a MongoDB
    - `__init__.py` - Inicialización de paquete
 
 4. **Configuración** (en `config/`)
-   - `database.yml` - Configuración de base de datos
+   - `database.yml` - Configuración de MongoDB
    - `.env.example` - Plantilla de variables de entorno
 
 ---
 
 ## Decisiones Clave
 
-### Tecnología Seleccionada: PostgreSQL 16 + PostGIS 3.4
+### Tecnología Seleccionada: MongoDB con Soporte Geoespacial
 
-**¿Por qué?**
--  Funcionalidad espacial superior (1000+ funciones vs 3 en MongoDB)
--  Indexación espacial R-tree para rendimiento óptimo
--  Estándar de la industria para aplicaciones GIS
--  Excelente integración con Python (GeoPandas, psycopg2)
--  Cumplimiento ACID para análisis reproducible
+**¿Por qué MongoDB?**
+- ✅ **Soporte geoespacial nativo:** Índices 2dsphere y operadores espaciales
+- ✅ **Escalabilidad horizontal:** Sharding nativo para grandes volúmenes de datos
+- ✅ **Esquema flexible:** Documentos JSON/BSON para metadatos heterogéneos
+- ✅ **Integración Python:** Excelente soporte con PyMongo y GeoPandas
+- ✅ **NoSQL puro:** Cumple con los requisitos del proyecto
+- ✅ **Facilidad de desarrollo:** Configuración rápida y curva de aprendizaje corta
 
 ### Modelo de Datos
 
-Diseñamos tres tablas principales:
+Diseñamos tres colecciones principales:
 
-1. **pdet_municipalities** - Límites territoriales PDET (170 registros)
+1. **pdet_municipalities** - Límites territoriales PDET (170 municipios)
 2. **buildings_microsoft** - Huellas de edificaciones Microsoft (~millones)
 3. **buildings_google** - Huellas de edificaciones Google (~millones)
 
-Más vistas materializadas para agregación eficiente:
-- `mv_municipality_stats_microsoft`
-- `mv_municipality_stats_google`
-- `mv_dataset_comparison`
+Todas las geometrías se almacenan en formato **GeoJSON** con coordenadas **WGS84 (EPSG:4326)**.
 
 ### Indexación Espacial
 
-- Índices **GiST R-tree** en todas las columnas de geometría
-- **Optimizado** para consultas punto-en-polígono (ST_Contains)
-- **Rendimiento** O(log n) caso promedio para búsquedas espaciales
+- Índices **2dsphere** en todas las columnas de geometría
+- **Optimizado** para consultas espaciales: `$geoWithin`, `$geoIntersects`, `$near`
+- Índices compuestos para agregaciones por municipio
+- **Rendimiento:** Búsquedas espaciales eficientes con geohashing
 
 ---
 
@@ -69,9 +70,9 @@ Más vistas materializadas para agregación eficiente:
 
 | Fase | Entregable | Cronograma | Estado |
 |-------|------------|----------|---------|
-| **Fase 1** | Configuración de base de datos y creación de esquema | Oct 23-24 | 📋 Planificado |
-| **Fase 2** | Carga de datos de municipios PDET | Oct 25-Nov 3 | ⏳ Siguiente |
-| **Fase 3** | Carga de datos de huellas de edificaciones | Nov 4-10 | ⏳ Futuro |
+| **Fase 1** | Configuración MongoDB y creación de esquema | Oct 23-24 | ✅ Completado |
+| **Fase 2** | Carga de datos de municipios PDET | Oct 25-Nov 3 | ✅ Completado |
+| **Fase 3** | Carga de datos de huellas de edificaciones | Nov 4-10 | ⏳ En progreso |
 | **Fase 4** | Análisis espacial y agregación | Nov 11-17 | ⏳ Futuro |
 | **Fase 5** | Reporte final y recomendaciones | Nov 18-24 | ⏳ Futuro |
 
@@ -86,19 +87,21 @@ Lea **[deliverable_1_report.md](deliverable_1_report.md)** para documentación c
 ### 2. Configurar Base de Datos (Fase 1)
 
 ```bash
-# Instalar PostgreSQL 16 y PostGIS 3.4
+# Asegúrate de tener MongoDB instalado y ejecutándose
+# Windows: Verifica que el servicio MongoDB esté activo
+# Linux/Mac: sudo systemctl start mongod
 
-# Crear base de datos
-createdb pdet_solar_analysis
-
-# Ejecutar script de creación de esquema
-psql -d pdet_solar_analysis -f sql_scripts/01_create_schema.sql
+# Verificar que MongoDB está ejecutándose
+mongosh --eval "db.version()"
 
 # Configurar entorno
 cp ../../.env.example ../../.env
-# Editar .env y establecer DB_PASSWORD
+# Editar .env si necesitas autenticación (opcional para desarrollo local)
 
-# Probar conexión
+# Ejecutar script de inicialización
+mongosh pdet_solar_analysis < mongodb_scripts/01_initialize_database.js
+
+# Probar conexión desde Python
 cd ../..
 python src/database/connection.py
 ```
@@ -106,29 +109,35 @@ python src/database/connection.py
 ### 3. Verificar Configuración
 
 ```bash
-# Ejecutar consultas de prueba
-psql -d pdet_solar_analysis -f sql_scripts/02_useful_queries.sql
+# Ejecutar consultas de exploración (después de cargar datos)
+mongosh pdet_solar_analysis < mongodb_scripts/02_useful_queries.js
+
+# O desde mongosh interactivo:
+mongosh
+use pdet_solar_analysis
+db.pdet_municipalities.countDocuments()
+db.getCollectionNames()
 ```
 
 ---
 
 ## Requisitos Cumplidos
 
-###  Plan de Implementación
+### ✅ Plan de Implementación
 - Cronograma detallado de implementación en 5 fases
 - Requisitos de recursos especificados
 - Estrategias de mitigación de riesgos documentadas
 
-###  Modelado de Datos
-- Modelo conceptual de datos con relaciones entre entidades
-- Modelo físico de datos con DDL completo
-- Vistas materializadas para rendimiento
+### ✅ Modelado de Datos
+- Modelo conceptual de datos con relaciones espaciales
+- Modelo físico de datos con esquemas de colecciones
+- Validación de esquema con JSON Schema
 
-###  Diseño de Esquema y Apropiación
-- Selección de tecnología justificada (PostgreSQL+PostGIS)
-- Esquema integral con indexación espacial
-- Optimizado para conjuntos de datos de escala de miles de millones
-- Alineado con requisitos del proyecto
+### ✅ Diseño de Esquema y Apropiación
+- Selección de tecnología justificada (MongoDB)
+- Esquema integral con indexación espacial 2dsphere
+- Optimizado para conjuntos de datos de escala masiva
+- Alineado con requisitos NoSQL del proyecto
 
 ---
 
@@ -136,33 +145,47 @@ psql -d pdet_solar_analysis -f sql_scripts/02_useful_queries.sql
 
 ```
 deliverable_1/
-├── README.md                           # Este archivo
-├── deliverable_1_report.md             # Reporte técnico principal
-└── sql_scripts/
-    ├── 01_create_schema.sql            # DDL de esquema de base de datos
-    └── 02_useful_queries.sql           # Consultas de análisis útiles
+├── README.md                              # Este archivo
+├── deliverable_1_report.md                # Reporte técnico principal
+└── mongodb_scripts/
+    ├── README.md                          # Documentación de scripts
+    ├── 01_initialize_database.js          # Inicialización de BD
+    └── 02_useful_queries.js               # Consultas de análisis
 ```
 
 ---
 
 ## Próximos Pasos
 
-1. **Revisión y Aprobación** - Presentar al equipo/instructor
-2. **Configuración de Base de Datos** - Implementar Fase 1 (Oct 23-24)
-3. **Adquisición de Datos** - Descargar conjuntos de datos de DANE, Microsoft, Google
-4. **Entregable 2** - Integración de municipios PDET (Entrega Nov 3)
+1. ✅ **Revisión y Aprobación** - Presentar al equipo/instructor
+2. ✅ **Configuración de Base de Datos** - MongoDB configurado
+3. ✅ **Adquisición de Datos** - Descargar conjuntos de datos de DANE
+4. ⏳ **Entregable 3** - Carga de huellas de edificaciones (Entrega Nov 10)
 
 ---
 
 ## Notas del Equipo
 
-- Todos los scripts SQL están listos para producción
+- Todos los scripts MongoDB están listos para producción
 - Los módulos Python están probados y documentados
 - Los archivos de configuración siguen las mejores prácticas
 - No se ha enviado información sensible al repositorio
+- **Actualización v2.0:** Eliminados scripts SQL de PostgreSQL, reemplazados por scripts MongoDB
 
 ---
 
-**Preparado por:** Alejandro Pinzon 
-**Fecha de Envío:** 22 de Octubre de 2025
-**Versión:** 1.0
+## Requisitos Técnicos
+
+- **MongoDB:** 5.0 o superior
+- **Python:** 3.8 o superior
+- **Librerías:** pymongo, geopandas, shapely, fiona
+- **Sistema Operativo:** Windows, Linux o macOS
+- **Memoria RAM:** Mínimo 8 GB (recomendado 16 GB para carga de edificaciones)
+- **Disco:** Mínimo 100 GB libre
+
+---
+
+**Preparado por:** Alejandro Pinzon, Juan Jose Bermudez, Juan Manuel Díaz
+**Fecha de Envío:** 27 de Octubre de 2025
+**Última Actualización:** 9 de Noviembre de 2025
+**Versión:** 2.0

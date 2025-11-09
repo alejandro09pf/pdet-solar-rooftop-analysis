@@ -12,8 +12,6 @@ folium>=0.15.0
 
 # Database Libraries (NoSQL)
 pymongo>=4.6.0  # MongoDB
-psycopg2-binary>=2.9.9  # PostgreSQL
-# Alternative: pip install psycopg2 (requires build tools)
 
 # Visualization
 matplotlib>=3.8.0

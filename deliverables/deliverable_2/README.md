@@ -1,128 +1,127 @@
 # Entregable 2: Integración del Conjunto de Datos de Límites Municipales PDET
 
-**Fecha de entrega:** 3 de noviembre, 2:00 PM
+**Fecha de entrega:** 3 de noviembre de 2025, 2:00 PM
+**Estado:** ✅ Completado
+**Versión:** 2.0 (Actualizado 9 Nov 2025)
 
 ---
 
-## Resumen
+## 📋 Resumen
 
-Este entregable cubre la integración de los 170 municipios PDET (Programas de Desarrollo con Enfoque Territorial) en la base de datos MongoDB, incluyendo:
+Este entregable cubre la integración completa de los 170 municipios PDET (Programas de Desarrollo con Enfoque Territorial) en la base de datos **MongoDB**, incluyendo:
 
-- Adquisición y verificación de datos desde DANE
-- Procesamiento y filtrado de municipios PDET
-- Validación y corrección de geometrías
-- Carga a MongoDB con índices espaciales
-- Documentación completa del proceso
+- ✅ Adquisición y verificación de datos desde DANE
+- ✅ Procesamiento y filtrado de municipios PDET
+- ✅ Validación y corrección de geometrías
+- ✅ Carga a MongoDB con índices espaciales 2dsphere
+- ✅ Documentación completa del proceso
+- ✅ Análisis exploratorio y visualizaciones
 
 ---
 
-## Archivos Preparados
+## 📁 Contenidos
 
-### 1. **Lista de Municipios PDET**
-📁 `data/processed/pdet_municipalities_list.csv`
-- Lista oficial de 170 municipios PDET
-- Incluye: código DIVIPOLA, departamento, municipio, región PDET, subregión PDET
+### 1. **Reporte Técnico Completo**
+📄 **[deliverable_2_report.md](deliverable_2_report.md)** (60+ páginas)
+- Metodología detallada
+- Fuentes de datos
+- Procesamiento y validación
+- Integración en MongoDB
+- Resultados y estadísticas
+- Visualizaciones
+- Conclusiones y próximos pasos
 
-### 2. **Script de Carga Paso a Paso**
-📁 `src/data_loaders/load_pdet_simple.py`
-- Script modular con 4 pasos bien definidos
+### 2. **Script de Carga Modular**
+📄 **[src/data_loaders/load_pdet_simple.py](../../src/data_loaders/load_pdet_simple.py)**
 - Paso 1: Verificar conexión MongoDB
 - Paso 2: Procesar shapefile y filtrar PDET
 - Paso 3: Cargar datos a MongoDB
 - Paso 4: Validar carga
 
-### 3. **Guía Completa**
-📁 `GUIA_PASO_A_PASO.md` (este directorio)
-- Instrucciones detalladas para cada paso
-- Solución de problemas comunes
-- Ejemplos de resultados esperados
+### 3. **Datos Procesados**
+📁 **data/processed/**
+- `pdet_municipalities_list.csv` - Lista oficial de 170 municipios PDET
+- `pdet_municipalities_ready.json` - Documentos GeoJSON listos para MongoDB
 
-### 4. **Configuración Actualizada**
-- `config/database.yml` → Configurado para MongoDB
-- `.env.example` → Variables de entorno actualizadas
-- `src/database/connection.py` → Módulo de conexión MongoDB completo
+### 4. **Notebook de Visualización**
+📓 **[notebooks/visualizacion_pdet.ipynb](../../notebooks/visualizacion_pdet.ipynb)**
+- Análisis exploratorio de datos (EDA)
+- Histogramas y gráficos de distribución
+- Mapas interactivos
 
 ---
 
-## Cómo Usar
+## 🚀 Inicio Rápido
 
-### Quick Start
+### Prerrequisitos
 
 ```bash
-# 1. Verifica que MongoDB esté corriendo
-python src/database/connection.py
+# MongoDB debe estar ejecutándose
+mongosh --eval "db.version()"
 
-# 2. Descarga datos de DANE manualmente (ver guía)
-# Guarda en: data/raw/dane/
+# Python 3.8+ con dependencias instaladas
+pip install -r requirements.txt
+```
 
-# 3. Procesa y filtra municipios PDET
-python src/data_loaders/load_pdet_simple.py --step 2 --shapefile data/raw/dane/MGN_MPIO_POLITICO.shp
+### Ejecución
 
-# 4. Carga a MongoDB
+```bash
+# Paso 1: Verificar conexión MongoDB
+python src/data_loaders/load_pdet_simple.py --step 1
+
+# Paso 2: Procesar shapefile DANE (REQUIERE DESCARGA PREVIA)
+# Descarga el shapefile de: https://geoportal.dane.gov.co
+# Guárdalo en: data/raw/dane/
+python src/data_loaders/load_pdet_simple.py --step 2 --shapefile data/raw/dane/MGN_ADM_MPIO_GRAFICO.shp
+
+# Paso 3: Cargar a MongoDB
 python src/data_loaders/load_pdet_simple.py --step 3
 
-# 5. Valida los datos
+# Paso 4: Validar datos
 python src/data_loaders/load_pdet_simple.py --step 4
 ```
 
-### Guía Detallada
+---
 
-Para instrucciones paso a paso completas, ver: **[GUIA_PASO_A_PASO.md](./GUIA_PASO_A_PASO.md)**
+## 📊 Resultados
+
+### Municipios PDET Cargados: 146 de 170 (85.88% cobertura)
+
+⚠️ **Nota importante**: 24 municipios de la lista oficial PDET no fueron encontrados en el shapefile DANE MGN 2024.
+Posibles causas: cambios en códigos DIVIPOLA, municipios fusionados/divididos, o actualizaciones pendientes en el MGN.
+
+**Distribución por región (municipios cargados):**
+
+| Región PDET | Municipios | Área (km²) |
+|-------------|------------|------------|
+| Alto Patía y Norte del Cauca | 24 | 13,532 |
+| Cuenca del Caguán y Piedemonte Caqueteño | 17 | 93,105 |
+| Montes de María | 15 | 6,410 |
+| Sierra Nevada-Perijá | 15 | 20,442 |
+| Chocó | 12 | 27,890 |
+| Macarena-Guaviare | 12 | 96,381 |
+| Otros (8 regiones) | 51 | 100,420 |
+| **TOTAL** | **146** | **358,181** |
+
+**Principales departamentos:**
+
+| Departamento | Municipios |
+|--------------|------------|
+| Nariño | 48 |
+| Chocó | 27 |
+| Cauca | 27 |
+| Antioquia | 24 |
+| Caquetá | 16 |
+| Meta | 11 |
+| Putumayo | 10 |
 
 ---
 
-## Descarga y preparación del dataset
+## 💾 Estructura de Datos en MongoDB
 
-1. **Descarga el shapefile oficial de municipios DANE:**
-   - Ve a: https://geoportal.dane.gov.co
-   - Busca y descarga el archivo “Marco Geoestadístico Nacional (MGN)” (usualmente llamado `MGN_MPIO_POLITICO.zip`).
-   - Extrae el contenido en: `data/raw/dane/MGN/`
-   - Asegúrate de incluir todos los archivos del shapefile: `.shp`, `.dbf`, `.shx`, `.prj`, etc.
+**Colección:** `pdet_municipalities`
 
-2. **Descarga la lista oficial de municipios PDET:**
-   - Ve a: https://centralpdet.renovacionterritorio.gov.co
-   - Descarga la lista y guárdala como `data/processed/pdet_municipalities_list.csv` (ya incluida en el repo).
-
----
-
-## Carga y procesamiento de datos
-
-1. **Verifica la conexión a MongoDB:**
-   ```bash
-   python src/data_loaders/load_pdet_simple.py --step 1
-   ```
-
-2. **Procesa el shapefile y filtra municipios PDET:**
-   ```bash
-   python src/data_loaders/load_pdet_simple.py --step 2 --shapefile data/raw/dane/MGN/MGN_ADM_MPIO_GRAFICO.shp
-   ```
-   Esto generará el archivo `data/processed/pdet_municipalities_ready.json`.
-
-3. **Carga los datos procesados a MongoDB:**
-   ```bash
-   python src/data_loaders/load_pdet_simple.py --step 3
-   ```
-
-4. **Valida la carga y revisa estadísticas:**
-   ```bash
-   python src/data_loaders/load_pdet_simple.py --step 4
-   ```
-
----
-
-## Visualización de los datos
-
-- Abre y ejecuta el notebook:
-  ```
-  notebooks/visualizacion_pdet.ipynb
-  ```
-  Aquí verás histogramas, boxplots y gráficos de barras de los municipios PDET.
-
----
-
-## Estructura de Datos en MongoDB
-
-### Colección: `pdet_municipalities`
+**Documento de ejemplo:**
 
 ```json
 {
@@ -135,7 +134,7 @@ Para instrucciones paso a paso completas, ver: **[GUIA_PASO_A_PASO.md](./GUIA_PA
   "pdet_subregion": "Bajo Cauca y Nordeste Antioqueño",
   "geom": {
     "type": "Polygon",
-    "coordinates": [[[...], [...]]]
+    "coordinates": [[[-75.123, 7.456], ...]]
   },
   "area_km2": 1234.56,
   "data_source": "DANE MGN",
@@ -144,44 +143,16 @@ Para instrucciones paso a paso completas, ver: **[GUIA_PASO_A_PASO.md](./GUIA_PA
 }
 ```
 
-### Índices Creados
-
-- **`geom_2dsphere`**: Índice espacial para consultas geoespaciales
-- **`muni_code`**: Índice único en código DIVIPOLA
-- **`dept_code`**: Índice en código de departamento
-- **`pdet_region`**: Índice en región PDET
-- **`pdet_subregion`**: Índice en subregión PDET
-
----
-
-## Distribución de Municipios PDET
-
-Los 170 municipios se distribuyen en 5 regiones y 16 subregiones:
-
-### Por Región
-
-| Región | Municipios |
-|--------|------------|
-| Región Pacífico y Frontera | ~90 |
-| Región Centro | ~30 |
-| Región Orinoquía | ~25 |
-| Región Norte | ~15 |
-| Región Caribe y Magdalena Medio | ~10 |
-
-### Por Departamento (principales)
-
-- Nariño: 48 municipios
-- Chocó: 27 municipios
-- Cauca: 27 municipios
-- Antioquia: 24 municipios
-- Caquetá: 16 municipios
-- Meta: 11 municipios
-- Putumayo: 10 municipios
-- (y otros)
+**Índices creados:**
+- ✅ `geom_2dsphere` - Índice espacial para consultas geoespaciales
+- ✅ `muni_code_unique` - Índice único en código DIVIPOLA
+- ✅ `dept_code_idx` - Índice en código de departamento
+- ✅ `pdet_region_idx` - Índice en región PDET
+- ✅ `pdet_subregion_idx` - Índice en subregión PDET
 
 ---
 
-## Requisitos Completados ✅
+## ✅ Requisitos Completados
 
 ### ✅ Adquisición y Verificación de Datos
 - Identificación de fuente de datos (DANE MGN)
@@ -189,76 +160,155 @@ Los 170 municipios se distribuyen en 5 regiones y 16 subregiones:
 - Instrucciones de descarga
 
 ### ✅ Integridad y Formato de Datos
-- Validación de geometrías
+- Validación de geometrías con Shapely
 - Corrección de geometrías inválidas
 - Conversión a WGS84 (EPSG:4326)
 - Cálculo de áreas en km²
 
 ### ✅ Integración Espacial en NoSQL
 - Carga en MongoDB
-- Formato GeoJSON
+- Formato GeoJSON estándar
 - Índices espaciales 2dsphere
 - Índices adicionales para consultas
 
 ### ✅ Documentación del Proceso
-- Guía paso a paso completa
-- Scripts documentados
+- Reporte técnico completo (60+ páginas)
+- Scripts documentados y modulares
 - Ejemplos de uso
 - Solución de problemas
 
 ---
 
-## Próximos Pasos
+## 📂 Estructura de Archivos
 
-Una vez completada la carga de datos:
+```
+deliverable_2/
+├── README.md                              # Este archivo
+└── deliverable_2_report.md                # Reporte técnico completo
 
-1. **Crear notebook de análisis** (`notebooks/02_pdet_municipalities.ipynb`)
-   - Visualización de municipios en mapa interactivo
-   - Análisis estadístico por región
-   - Gráficos de distribución
+src/data_loaders/
+└── load_pdet_simple.py                    # Script de carga modular
 
-2. **Generar reporte de calidad de datos**
-   - Validación completa de geometrías
-   - Verificación de atributos
-   - Estadísticas detalladas
+data/processed/
+├── pdet_municipalities_list.csv           # Lista oficial PDET
+└── pdet_municipalities_ready.json         # Documentos GeoJSON
 
-3. **Documentar resultados**
-   - Reporte técnico del Entregable 2
-   - Mapas y visualizaciones
-   - Conclusiones
-
----
-
-## Fuentes de Datos
-
-- **DANE - Marco Geoestadístico Nacional (MGN)**
-  - URL: https://geoportal.dane.gov.co
-  - Archivo: MGN_MPIO_POLITICO
-  - Licencia: Datos abiertos
-
-- **PDET - Renovación Territorial**
-  - URL: https://centralpdet.renovacionterritorio.gov.co
-  - Lista oficial de municipios PDET
+notebooks/
+└── visualizacion_pdet.ipynb               # Visualizaciones y EDA
+```
 
 ---
 
-## Soporte y Contacto
+## 🔍 Consultas MongoDB Útiles
 
-Para preguntas o problemas:
-- Revisar `GUIA_PASO_A_PASO.md`
-- Verificar sección "Solución de Problemas"
-- Consultar documentación de MongoDB: https://docs.mongodb.com
+### Contar municipios
+```javascript
+db.pdet_municipalities.countDocuments()
+```
+
+### Municipios por región
+```javascript
+db.pdet_municipalities.aggregate([
+  { $group: { _id: "$pdet_region", count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+])
+```
+
+### Buscar municipio específico
+```javascript
+db.pdet_municipalities.findOne({ muni_code: "05120" })
+```
+
+### Municipios en un departamento
+```javascript
+db.pdet_municipalities.find(
+  { dept_code: "05" },
+  { muni_name: 1, area_km2: 1, _id: 0 }
+)
+```
 
 ---
 
-## Control de Versiones
+## 📝 Fuentes de Datos
 
-| Versión | Fecha | Cambios |
-|---------|-------|---------|
-| 1.0 | 2025-11-01 | Versión inicial - Scripts y guía completa |
+### DANE - Marco Geoestadístico Nacional (MGN)
+- **URL:** https://geoportal.dane.gov.co
+- **Archivo:** MGN_ADM_MPIO_GRAFICO.shp (o similar)
+- **Licencia:** Datos abiertos - Gobierno de Colombia
+- **Cobertura:** 1,122 municipios de Colombia
+
+### PDET - Renovación Territorial
+- **URL:** https://centralpdet.renovacionterritorio.gov.co
+- **Archivo:** pdet_municipalities_list.csv (incluido en repo)
+- **Cobertura:** 170 municipios PDET en 16 subregiones
 
 ---
 
-**Autores:** Alejandro Pinzon Fajardo, Juan Jose Bermudez
+## ⚠️ Notas Importantes
+
+### 1. Cobertura de Datos: 146 de 170 municipios (85.88%)
+
+**Estado actual**: El proceso de carga completó exitosamente pero solo identificó 146 municipios PDET en el shapefile DANE MGN 2024.
+
+**Municipios faltantes**: 24 municipios de la lista oficial PDET no fueron encontrados.
+
+**Análisis de la situación**:
+- ✅ Pipeline de carga **100% funcional**
+- ✅ Join espacial realizado correctamente (código DIVIPOLA)
+- ✅ Los 146 municipios cargados tienen **datos completos y validados**
+- ⚠️ 24 municipios (14.12%) no se encontraron en el shapefile
+
+**Posibles causas**:
+1. Cambios en códigos DIVIPOLA entre lista PDET y shapefile DANE
+2. Municipios fusionados o divididos después de la publicación de la lista PDET
+3. Discrepancias entre bases de datos oficiales (Renovación Territorial vs DANE)
+4. Actualización pendiente del Marco Geoestadístico Nacional 2024
+
+**Recomendación**: Los 146 municipios son suficientes para el análisis de potencial solar, cubriendo 358,181 km² de territorios PDET en 14 regiones.
+
+### 2. Descarga de Shapefile
+
+- El shapefile de DANE NO está incluido en el repositorio (archivo grande)
+- Debe descargarse manualmente de https://geoportal.dane.gov.co
+- Guardar en `data/raw/dane/`
+- Archivo usado: MGN_ADM_MPIO_GRAFICO.shp (MGN 2024)
+
+### 3. Requisitos de Sistema
+
+- MongoDB 5.0+ ejecutándose
+- Python 3.8+
+- 4 GB RAM mínimo
+- 1 GB espacio en disco
+
+### 4. Tiempo de Ejecución
+
+- Paso 1: < 1 minuto
+- Paso 2: 2-5 minutos
+- Paso 3: 1-2 minutos
+- Paso 4: < 1 minuto
+
+---
+
+## 🔄 Próximos Pasos
+
+### Entregable 3 (10 Nov - En progreso)
+1. Descargar Microsoft Building Footprints
+2. Descargar Google Open Buildings
+3. Implementar scripts de carga de edificaciones
+4. Realizar join espacial edificaciones-municipios
+5. EDA inicial de edificaciones
+
+---
+
+## 👥 Equipo
+
+**Preparado por:**
+- Alejandro Pinzon Fajardo
+- Juan Jose Bermudez
+- Juan Manuel Díaz
+
 **Proyecto:** Análisis de Potencial Solar en Techos PDET
 **Curso:** Administración de Bases de Datos - Proyecto Final
+**Fecha:** 3 de Noviembre de 2025
+**Última actualización:** 9 de Noviembre de 2025
+**Versión:** 2.0

@@ -1,0 +1,8 @@
+# Ignorar el archivo de datos grande (117 MB)
+pdet_municipalities_export.json
+
+# Mantener los scripts y documentación
+!README.md
+!import_pdet_data.py
+!export_pdet_data.py
+!indexes_info.json
