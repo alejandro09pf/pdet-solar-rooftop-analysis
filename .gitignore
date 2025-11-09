@@ -118,3 +118,7 @@ config/secrets.yml
 config/database.yml
 *.key
 *.pem
+
+# MongoDB backups
+pdet_mongo_backup.zip
+backup_mongo/pdet_municipalities_export.json
