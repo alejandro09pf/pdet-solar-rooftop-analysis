@@ -169,17 +169,17 @@ def test_connection(config=None, verbose=True):
 
         client.admin.command('ping')
         if verbose:
-            print(f"✓ Connected to MongoDB")
+            print(f"[OK] Connected to MongoDB")
 
         server_info = client.server_info()
         if verbose:
-            print(f"✓ MongoDB Version: {server_info['version']}")
-            print(f"✓ Database: {db_name}")
+            print(f"[OK] MongoDB Version: {server_info['version']}")
+            print(f"[OK] Database: {db_name}")
 
         collections = db.list_collection_names()
         if verbose:
             if collections:
-                print(f"\n✓ Collections in database:")
+                print(f"\n[OK] Collections in database:")
                 for coll_name in collections:
                     coll = db[coll_name]
                     count = coll.count_documents({})
@@ -189,11 +189,11 @@ def test_connection(config=None, verbose=True):
                     if index_names:
                         print(f"    Indexes: {', '.join(index_names)}")
             else:
-                print(f"\n⚠ No collections found in database '{db_name}'")
+                print(f"\n[!] No collections found in database '{db_name}'")
                 print("  Collections will be created when data is loaded.")
 
         if verbose:
-            print(f"\n✓ Geospatial Support:")
+            print(f"\n[OK] Geospatial Support:")
             print(f"  - 2dsphere indexes: Supported")
             print(f"  - GeoJSON format: Supported")
             print(f"  - Spatial operators: $geoWithin, $geoIntersects, $near, $nearSphere")
@@ -203,23 +203,23 @@ def test_connection(config=None, verbose=True):
         result = test_coll.insert_one(test_doc)
         test_coll.delete_one({"_id": result.inserted_id})
         if verbose:
-            print(f"\n✓ Write permission: OK")
+            print(f"\n[OK] Write permission: OK")
 
         if verbose:
             print("=" * 60)
-            print("✓ Connection test PASSED")
+            print("[OK] Connection test PASSED")
             print("=" * 60)
 
         return True
 
     except FileNotFoundError as e:
         if verbose:
-            print(f"\n✗ Configuration Error: {e}")
+            print(f"\n[ERROR] Configuration Error: {e}")
         return False
 
     except ConnectionFailure as e:
         if verbose:
-            print(f"\n✗ Connection test FAILED")
+            print(f"\n[ERROR] Connection test FAILED")
             print(f"Error: Cannot connect to MongoDB server")
             print(f"Details: {e}")
             print("\nTroubleshooting:")
@@ -233,7 +233,7 @@ def test_connection(config=None, verbose=True):
 
     except OperationFailure as e:
         if verbose:
-            print(f"\n✗ Connection test FAILED")
+            print(f"\n[ERROR] Connection test FAILED")
             print(f"Error: Authentication failed or insufficient permissions")
             print(f"Details: {e}")
             print("\nTroubleshooting:")
@@ -244,7 +244,7 @@ def test_connection(config=None, verbose=True):
 
     except Exception as e:
         if verbose:
-            print(f"\n✗ Connection test FAILED")
+            print(f"\n[ERROR] Connection test FAILED")
             print(f"Error: {type(e).__name__}: {e}")
             print("\nTroubleshooting:")
             print("1. Check MongoDB server logs")

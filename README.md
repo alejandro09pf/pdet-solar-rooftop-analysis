@@ -62,25 +62,28 @@ pdet-solar-rooftop-analysis/
 
 ## Cronograma de Entregables
 
-### Entregable 1 - 27 de Octubre, 2:00 PM
+### Entregable 1 - 27 de Octubre, 2:00 PM ✅
 **Diseño de Esquema de Base de Datos NoSQL y Plan de Implementación**
-- Plan de Implementación
-- Modelado de Datos
-- Diseño de Esquema y Apropiación
+- ✅ Plan de Implementación
+- ✅ Modelado de Datos MongoDB
+- ✅ Diseño de Esquema y Apropiación
+- ✅ Scripts MongoDB de inicialización
 
-### Entregable 2 - 3 de Noviembre, 2:00 PM
+### Entregable 2 - 3 de Noviembre, 2:00 PM ✅
 **Integración del Conjunto de Datos de Límites Municipales PDET**
-- Adquisición y Verificación de Datos
-- Integridad y Formato de Datos
-- Integración Espacial NoSQL
-- Documentación del Proceso
+- ✅ Adquisición y Verificación de Datos
+- ✅ Integridad y Formato de Datos
+- ✅ Integración Espacial NoSQL (MongoDB)
+- ✅ Documentación del Proceso
+- ✅ 146 municipios PDET cargados (85.88% de cobertura)
+- ⚠️ Nota: 24 municipios no encontrados en shapefile DANE MGN 2024
 
-### Entregable 3 - 10 de Noviembre, 2:00 PM
+### Entregable 3 - 10 de Noviembre, 2:00 PM ⏳
 **Reporte de Carga e Integración de Datos de Huellas de Edificaciones**
-- Integración de Conjuntos de Datos de Microsoft y Google
-- Indexación Espacial
-- Eficiencia de Carga de Datos
-- Auditoría Inicial de Datos (EDA)
+- ⏳ Integración de Conjuntos de Datos de Microsoft y Google
+- ⏳ Indexación Espacial
+- ⏳ Eficiencia de Carga de Datos
+- ⏳ Auditoría Inicial de Datos (EDA)
 
 ### Entregable 4 - 17 de Noviembre, 2:00 PM
 **Flujo de Trabajo de Análisis Geoespacial Reproducible**
@@ -99,11 +102,12 @@ pdet-solar-rooftop-analysis/
 
 ## Stack Tecnológico
 
-- **Base de Datos NoSQL**: Por definir (MongoDB/PostgreSQL+PostGIS/etc.)
-- **Lenguaje de Programación**: Python
-- **Librerías Geoespaciales**: GeoPandas, Shapely, Fiona, PyGEOS
+- **Base de Datos NoSQL**: MongoDB 5.0+ (con soporte geoespacial 2dsphere)
+- **Lenguaje de Programación**: Python 3.8+
+- **Librerías Geoespaciales**: GeoPandas, Shapely, Fiona, PyProj
+- **MongoDB**: PyMongo
 - **Procesamiento de Datos**: Pandas, NumPy
-- **Visualización**: Matplotlib, Folium, Plotly
+- **Visualización**: Matplotlib, Seaborn, Folium, Plotly
 
 ## Primeros Pasos
 
@@ -126,8 +130,21 @@ cd pdet-solar-rooftop-analysis
 python -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 
-# Instalar dependencias (a agregar)
+# Instalar dependencias
 pip install -r requirements.txt
+
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env si necesitas configuración específica
+
+# Verificar MongoDB está ejecutándose
+mongosh --eval "db.version()"
+
+# Inicializar base de datos MongoDB
+mongosh pdet_solar_analysis < deliverables/deliverable_1/mongodb_scripts/01_initialize_database.js
+
+# Probar conexión Python - MongoDB
+python src/database/connection.py
 ```
 
 ## Licencia
