@@ -10,13 +10,13 @@ Este directorio contiene todos los entregables del proyecto presentados de acuer
 **Entrega: 27 de octubre, 2:00 PM**
 
 **Requisitos:**
-- [ ] Plan de Implementación
-- [ ] Modelado de Datos
-- [ ] Diseño del Esquema y Pertinencia
-      
-**Estado:** No Iniciado
+- [x] Plan de Implementación
+- [x] Modelado de Datos
+- [x] Diseño del Esquema y Pertinencia
 
-**Entregado:** [ ]
+**Estado:** ✅ Completado
+
+**Entregado:** [x] 27 de Octubre 2025
 
 ---
 
@@ -24,14 +24,19 @@ Este directorio contiene todos los entregables del proyecto presentados de acuer
 **Entrega: 3 de noviembre, 2:00 PM**
 
 **Requisitos:**
-- [ ] Adquisición y Verificación de Datos
-- [ ] Integridad y Formato de los Datos
-- [ ] Integración Espacial en NoSQL
-- [ ] Documentación del Proceso
+- [x] Adquisición y Verificación de Datos
+- [x] Integridad y Formato de los Datos
+- [x] Integración Espacial en NoSQL
+- [x] Documentación del Proceso
 
-**Estado:** No Iniciado
+**Estado:** ✅ Completado
 
-**Entregado:** [ ]
+**Entregado:** [x] 3 de Noviembre 2025
+
+**Resultados:**
+- 146 municipios PDET cargados (85.88% de cobertura)
+- Índices espaciales 2dsphere implementados
+- Documentación completa del proceso
 
 ---
 
@@ -39,14 +44,27 @@ Este directorio contiene todos los entregables del proyecto presentados de acuer
 **Entrega: 10 de noviembre, 2:00 PM**
 
 **Requisitos:**
-- [ ] Integración de Conjuntos de Datos de Microsoft y Google
-- [ ] Indexación Espacial
-- [ ] Eficiencia en la Carga de Datos
-- [ ] Auditoría Inicial de Datos (EDA)
+- [x] Integración de Conjuntos de Datos de Microsoft y Google
+- [~] Indexación Espacial
+- [x] Eficiencia en la Carga de Datos
+- [x] Auditoría Inicial de Datos (EDA)
 
-**Estado:** No Iniciado
+**Estado:** ✅ Completado
 
-**Entregado:** [ ]
+**Entregado:** [x] 10 de Noviembre 2025
+
+**Resultados:**
+- **Microsoft Buildings:** 6,083,821 edificaciones cargadas
+- **Google Buildings:** Trabajado en equipo paralelo (16,530,628 edificaciones documentadas)
+- **Join Espacial:** Análisis completo edificaciones × municipios PDET
+- **EDA:** Notebooks y documentación técnica completa
+- **Limitación:** Índices espaciales no implementados por geometrías inválidas (documentado)
+
+**Equipo:**
+- PERSONA 1 (Alejandro): Microsoft Buildings integration ✅
+- PERSONA 2 (Juan José): Google Buildings integration ✅ (equipo paralelo)
+- PERSONA 3: EDA y visualizaciones ✅
+- PERSONA 4: Join espacial y validación ✅
 
 ---
 

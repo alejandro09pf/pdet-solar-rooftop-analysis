@@ -1,0 +1,76 @@
+{
+  "timestamp": "2025-11-10T13:19:08.111164",
+  "total_municipalities": 146,
+  "total_microsoft_buildings": 2399273,
+  "total_google_buildings": 0,
+  "municipalities_with_microsoft_data": 145,
+  "municipalities_with_google_data": 0,
+  "top_10_municipalities_microsoft": [
+    {
+      "muni_name": "Santa Marta",
+      "dept_name": "Magdalena",
+      "microsoft_buildings_count": 75961
+    },
+    {
+      "muni_name": "Valledupar",
+      "dept_name": "Cesar",
+      "microsoft_buildings_count": 62912
+    },
+    {
+      "muni_name": "San Vicente del Caguán",
+      "dept_name": "Caquetá",
+      "microsoft_buildings_count": 55995
+    },
+    {
+      "muni_name": "El Tambo",
+      "dept_name": "Cauca",
+      "microsoft_buildings_count": 55201
+    },
+    {
+      "muni_name": "Tierralta",
+      "dept_name": "Córdoba",
+      "microsoft_buildings_count": 46090
+    },
+    {
+      "muni_name": "San Juan del Cesar",
+      "dept_name": "La Guajira",
+      "microsoft_buildings_count": 43686
+    },
+    {
+      "muni_name": "San Andres de Tumaco",
+      "dept_name": "Nariño",
+      "microsoft_buildings_count": 43466
+    },
+    {
+      "muni_name": "Montelíbano",
+      "dept_name": "Córdoba",
+      "microsoft_buildings_count": 43248
+    },
+    {
+      "muni_name": "Florencia",
+      "dept_name": "Caquetá",
+      "microsoft_buildings_count": 40233
+    },
+    {
+      "muni_name": "La Paz",
+      "dept_name": "Cesar",
+      "microsoft_buildings_count": 40148
+    }
+  ],
+  "by_region": {
+    "Alto Patía y Norte del Cauca": 441309,
+    "Arauca": 87364,
+    "Catatumbo": 167515,
+    "Chocó": 79341,
+    "Cuenca del Caguán y Piedemonte Caqueteño": 269971,
+    "Macarena-Guaviare": 137651,
+    "Montes de María": 146187,
+    "Pacífico Medio": 71394,
+    "Pacífico y Frontera Nariñense": 115421,
+    "Putumayo": 142611,
+    "Sierra Nevada-Perijá": 425062,
+    "Sur de Bolívar": 93027,
+    "Sur de Córdoba": 151548,
+    "Sur del Tolima": 70872
+  }
+}
