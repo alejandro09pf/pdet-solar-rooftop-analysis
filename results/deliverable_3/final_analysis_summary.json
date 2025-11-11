@@ -1,0 +1,191 @@
+{
+  "timestamp": "2025-11-11T00:10:06.686213",
+  "method": "bbox filtering with first point",
+  "total_municipalities": 146,
+  "microsoft": {
+    "total_buildings": 2399273,
+    "total_area_km2": 317.5,
+    "municipalities_with_data": 145
+  },
+  "google": {
+    "total_buildings": 2512484,
+    "total_area_km2": 0,
+    "municipalities_with_data": 100
+  },
+  "top_10_microsoft": [
+    {
+      "muni_name": "Santa Marta",
+      "dept_name": "Magdalena",
+      "pdet_region": "Sierra Nevada-Perijá",
+      "count": 75961,
+      "area_km2": 14.1311
+    },
+    {
+      "muni_name": "Valledupar",
+      "dept_name": "Cesar",
+      "pdet_region": "Sierra Nevada-Perijá",
+      "count": 62912,
+      "area_km2": 12.4431
+    },
+    {
+      "muni_name": "San Vicente del Caguán",
+      "dept_name": "Caquetá",
+      "pdet_region": "Cuenca del Caguán y Piedemonte Caqueteño",
+      "count": 55995,
+      "area_km2": 8.1414
+    },
+    {
+      "muni_name": "El Tambo",
+      "dept_name": "Cauca",
+      "pdet_region": "Alto Patía y Norte del Cauca",
+      "count": 55201,
+      "area_km2": 5.8412
+    },
+    {
+      "muni_name": "Tierralta",
+      "dept_name": "Córdoba",
+      "pdet_region": "Sur de Córdoba",
+      "count": 46090,
+      "area_km2": 4.5913
+    },
+    {
+      "muni_name": "San Juan del Cesar",
+      "dept_name": "La Guajira",
+      "pdet_region": "Sierra Nevada-Perijá",
+      "count": 43686,
+      "area_km2": 5.3027
+    },
+    {
+      "muni_name": "San Andres de Tumaco",
+      "dept_name": "Nariño",
+      "pdet_region": "Pacífico y Frontera Nariñense",
+      "count": 43466,
+      "area_km2": 4.7676
+    },
+    {
+      "muni_name": "Montelíbano",
+      "dept_name": "Córdoba",
+      "pdet_region": "Sur de Córdoba",
+      "count": 43248,
+      "area_km2": 5.9175
+    },
+    {
+      "muni_name": "Florencia",
+      "dept_name": "Caquetá",
+      "pdet_region": "Cuenca del Caguán y Piedemonte Caqueteño",
+      "count": 40233,
+      "area_km2": 8.3044
+    },
+    {
+      "muni_name": "La Paz",
+      "dept_name": "Cesar",
+      "pdet_region": "Sierra Nevada-Perijá",
+      "count": 40148,
+      "area_km2": 5.7176
+    }
+  ],
+  "top_10_google": [
+    {
+      "muni_name": "Buenaventura",
+      "dept_name": "Valle del Cauca",
+      "pdet_region": "Pacífico Medio",
+      "count": 112295,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Florencia",
+      "dept_name": "Caquetá",
+      "pdet_region": "Cuenca del Caguán y Piedemonte Caqueteño",
+      "count": 101074,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Tierralta",
+      "dept_name": "Córdoba",
+      "pdet_region": "Sur de Córdoba",
+      "count": 96209,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Cajibío",
+      "dept_name": "Cauca",
+      "pdet_region": "Alto Patía y Norte del Cauca",
+      "count": 95828,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "El Tambo",
+      "dept_name": "Cauca",
+      "pdet_region": "Alto Patía y Norte del Cauca",
+      "count": 94339,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Riosucio",
+      "dept_name": "Chocó",
+      "pdet_region": "Chocó",
+      "count": 83811,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Montelíbano",
+      "dept_name": "Córdoba",
+      "pdet_region": "Sur de Córdoba",
+      "count": 82719,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Valencia",
+      "dept_name": "Córdoba",
+      "pdet_region": "Sur de Córdoba",
+      "count": 76801,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "San Vicente del Caguán",
+      "dept_name": "Caquetá",
+      "pdet_region": "Cuenca del Caguán y Piedemonte Caqueteño",
+      "count": 73805,
+      "area_km2": 0
+    },
+    {
+      "muni_name": "Piendamó",
+      "dept_name": "Cauca",
+      "pdet_region": "Alto Patía y Norte del Cauca",
+      "count": 65387,
+      "area_km2": 0
+    }
+  ],
+  "by_region_microsoft": {
+    "Sur de Bolívar": 93027,
+    "Montes de María": 146187,
+    "Cuenca del Caguán y Piedemonte Caqueteño": 269971,
+    "Alto Patía y Norte del Cauca": 441309,
+    "Pacífico Medio": 71394,
+    "Sierra Nevada-Perijá": 425062,
+    "Sur de Córdoba": 151548,
+    "Chocó": 79341,
+    "Macarena-Guaviare": 137651,
+    "Pacífico y Frontera Nariñense": 115421,
+    "Catatumbo": 167515,
+    "Sur del Tolima": 70872,
+    "Arauca": 87364,
+    "Putumayo": 142611
+  },
+  "by_region_google": {
+    "Sur de Bolívar": 0,
+    "Montes de María": 253591,
+    "Cuenca del Caguán y Piedemonte Caqueteño": 408873,
+    "Alto Patía y Norte del Cauca": 819644,
+    "Pacífico Medio": 146550,
+    "Sierra Nevada-Perijá": 0,
+    "Sur de Córdoba": 311779,
+    "Chocó": 115926,
+    "Macarena-Guaviare": 94458,
+    "Pacífico y Frontera Nariñense": 82163,
+    "Catatumbo": 0,
+    "Sur del Tolima": 57315,
+    "Arauca": 0,
+    "Putumayo": 222185
+  }
+}

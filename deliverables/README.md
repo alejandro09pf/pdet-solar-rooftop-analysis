@@ -54,11 +54,15 @@ Este directorio contiene todos los entregables del proyecto presentados de acuer
 **Entregado:** [x] 10 de Noviembre 2025
 
 **Resultados:**
-- **Microsoft Buildings:** 6,083,821 edificaciones cargadas
-- **Google Buildings:** Trabajado en equipo paralelo (16,530,628 edificaciones documentadas)
-- **Join Espacial:** Análisis completo edificaciones × municipios PDET
-- **EDA:** Notebooks y documentación técnica completa
-- **Limitación:** Índices espaciales no implementados por geometrías inválidas (documentado)
+- **Microsoft Buildings:** 6,083,821 edificaciones cargadas ✅
+- **Google Buildings:** 16,530,628 edificaciones cargadas ✅
+- **Join Espacial Completo:**
+  - Microsoft en PDET: 2,399,273 edificaciones (317.50 km²)
+  - Google en PDET: 2,512,484 edificaciones
+  - 146 municipios analizados (100%)
+  - Datos guardados en MongoDB: `buildings_by_municipality`
+- **EDA:** Notebooks y documentación técnica completa ✅
+- **Limitación:** Índices espaciales no implementados (geometrías inválidas documentadas)
 
 **Equipo:**
 - PERSONA 1 (Alejandro): Microsoft Buildings integration ✅

@@ -1,0 +1,116 @@
+{
+  "timestamp": "2025-11-10T21:24:22.640009",
+  "total_municipalities": 113,
+  "microsoft": {
+    "total_buildings": 1578333,
+    "total_area_km2": 199.46
+  },
+  "google": {
+    "total_buildings": 2756697,
+    "total_area_km2": 0
+  },
+  "top_10_microsoft": [
+    {
+      "muni_name": "El Tambo",
+      "dept_name": "Cauca",
+      "count": 55201
+    },
+    {
+      "muni_name": "Tierralta",
+      "dept_name": "Córdoba",
+      "count": 46090
+    },
+    {
+      "muni_name": "San Andres de Tumaco",
+      "dept_name": "Nariño",
+      "count": 43466
+    },
+    {
+      "muni_name": "Montelíbano",
+      "dept_name": "Córdoba",
+      "count": 43248
+    },
+    {
+      "muni_name": "Florencia",
+      "dept_name": "Caquetá",
+      "count": 40233
+    },
+    {
+      "muni_name": "Buenaventura",
+      "dept_name": "Valle del Cauca",
+      "count": 39704
+    },
+    {
+      "muni_name": "Buenos Aires",
+      "dept_name": "Cauca",
+      "count": 39306
+    },
+    {
+      "muni_name": "Riosucio",
+      "dept_name": "Chocó",
+      "count": 38150
+    },
+    {
+      "muni_name": "Cajibío",
+      "dept_name": "Cauca",
+      "count": 36146
+    },
+    {
+      "muni_name": "Santander de Quilichao",
+      "dept_name": "Cauca",
+      "count": 35683
+    }
+  ],
+  "top_10_google": [
+    {
+      "muni_name": "Buenaventura",
+      "dept_name": "Valle del Cauca",
+      "count": 112295
+    },
+    {
+      "muni_name": "Florencia",
+      "dept_name": "Caquetá",
+      "count": 101074
+    },
+    {
+      "muni_name": "Tierralta",
+      "dept_name": "Córdoba",
+      "count": 96209
+    },
+    {
+      "muni_name": "Cajibío",
+      "dept_name": "Cauca",
+      "count": 95828
+    },
+    {
+      "muni_name": "El Tambo",
+      "dept_name": "Cauca",
+      "count": 94339
+    },
+    {
+      "muni_name": "Riosucio",
+      "dept_name": "Chocó",
+      "count": 83811
+    },
+    {
+      "muni_name": "Montelíbano",
+      "dept_name": "Córdoba",
+      "count": 82719
+    },
+    {
+      "muni_name": "Valencia",
+      "dept_name": "Córdoba",
+      "count": 76801
+    },
+    {
+      "muni_name": "Piendamó",
+      "dept_name": "Cauca",
+      "count": 65387
+    },
+    {
+      "muni_name": "El Carmen de Bolívar",
+      "dept_name": "Bolívar",
+      "count": 64449
+    }
+  ]
+}
