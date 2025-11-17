@@ -419,3 +419,294 @@ Este archivo puede usarse para:
 - **Mapas** en QGIS (join con geometrías)
 - **Reportes** en Excel
 - **Dashboards** interactivos
+###  **03_regional_summary.py** - Resumen Regional con MongoDB
+
+#### 🎯 Propósito
+Genera un resumen agregado de estadísticas por región PDET utilizando el poder de agregación de MongoDB. Este script delega todo el procesamiento pesado al servidor de base de datos.
+
+#### ✨ Características
+- **Agregación nativa de MongoDB**: Usa `$group` para cálculos en servidor
+- **Alto rendimiento**: MongoDB procesa millones de registros eficientemente
+- **Múltiples métricas**: Calcula totales, promedios y rankings por región
+
+#### 📊 Métricas Calculadas
+
+**Por cada región PDET:**
+- Número de municipios
+- Total de edificaciones (Microsoft y Google)
+- Área total de techos (km²)
+- Área útil solar (km²)
+- Promedio de edificaciones por municipio
+- Municipio con mayor número de edificaciones
+
+#### 📤 Salidas
+- **CSV**: `deliverables/deliverable_4/outputs/tables/regional_summary.csv`
+- **Formato**: 14 regiones PDET ordenadas por total de edificaciones
+
+#### 🚀 Uso
+```bash
+python deliverables/deliverable_4/scripts/03_regional_summary.py
+```
+
+#### 📝 Ejemplo de Salida
+```
+RANKING DE REGIONES PDET (por edificaciones Microsoft)
+1. Arauca                                      -  450,231 edif (7 munis) - 125.45 km²
+   Top: Arauca (215,432 edif)
+2. Pacífico Medio                              -  398,567 edif (5 munis) - 110.23 km²
+   Top: Buenaventura (180,234 edif)
+```
+
+---
+
+### 2. **04_export_geojson.py** - Exportación Geoespacial
+
+#### 🎯 Propósito
+Exporta los datos de municipios PDET en formato GeoJSON con todas las estadísticas calculadas, listo para visualización en herramientas GIS y mapas web.
+
+#### ✨ Características
+- **Formato estándar**: GeoJSON compatible con QGIS, ArcGIS, Leaflet, Mapbox
+- **Geometrías completas**: Polígonos de límites municipales
+- **Estadísticas integradas**: Todos los datos en las propiedades de cada feature
+
+#### 📊 Propiedades Incluidas
+
+**Identificación:**
+- Código de municipio
+- Nombre de municipio
+- Departamento
+- Región y subregión PDET
+- Área municipal (km²)
+
+**Estadísticas Microsoft:**
+- Conteo de edificaciones
+- Área promedio (m²)
+- Área total de techos (km²)
+- Área útil solar (km² y ha)
+
+**Estadísticas Google:**
+- Conteo de edificaciones
+- Área promedio (m²)
+- Área total de techos (km²)
+- Área útil solar (km² y ha)
+
+#### 📤 Salidas
+- **GeoJSON**: `deliverables/deliverable_4/outputs/geojson/municipalities_with_stats.geojson`
+- **Features**: 146 municipios PDET
+- **CRS**: WGS84 (EPSG:4326)
+
+#### 🚀 Uso
+```bash
+python deliverables/deliverable_4/scripts/04_export_geojson.py
+```
+
+#### 🗺️ Casos de Uso
+- Visualización en mapas interactivos
+- Análisis espacial en QGIS/ArcGIS
+- Integración con aplicaciones web de mapas
+- Generación de informes geográficos
+
+---
+
+### 3. **validate.py** - Validación Completa del Deliverable
+
+#### 🎯 Propósito
+Verifica que todos los requisitos del Deliverable 4 estén cumplidos correctamente, validando datos, archivos y estructura del proyecto.
+
+#### ✨ Características
+- **Validación integral**: Revisa MongoDB, archivos CSV, GeoJSON, scripts y documentación
+- **Reporte detallado**: Errores, advertencias y confirmaciones claras
+- **Exit codes**: Retorna 0 si todo está OK, 1 si hay errores
+
+#### 🔍 Validaciones Realizadas
+
+**1. Base de Datos MongoDB**
+- ✅ 146 municipios en la colección
+- ✅ Campos `area_util_km2` y `area_util_ha` presentes
+- ✅ Totales de edificaciones y área útil
+
+**2. Archivos CSV**
+- ✅ `municipalities_stats.csv` (146 municipios + header)
+- ✅ `regional_summary.csv` (14 regiones + header)
+
+**3. GeoJSON**
+- ✅ Archivo existe y es válido
+- ✅ Tipo FeatureCollection
+- ✅ 146 features
+- ✅ Campos requeridos presentes
+
+**4. Scripts**
+- ✅ Todos los scripts del pipeline presentes
+- ✅ Estructura de directorios correcta
+
+**5. Documentación**
+- ✅ README.md
+- ✅ METODOLOGIA.md
+- ✅ REPORTE_FINAL_ENTREGABLE_4.md
+
+#### 📤 Salidas
+Imprime en consola un reporte completo con:
+- Estado de cada validación (✅/❌/⚠️)
+- Detalles de errores y advertencias
+- Resumen final del deliverable
+
+#### 🚀 Uso
+```bash
+python deliverables/deliverable_4/scripts/validate.py
+```
+
+#### 📝 Ejemplo de Salida
+```
+VALIDACIÓN DELIVERABLE 4
+======================================================================
+
+1. Verificando datos en MongoDB...
+   ✅ 146 municipios en buildings_by_municipality
+   ✅ Campo area_util_km2 presente: 0.45 km²
+   ✅ Campo area_util_ha presente: 45.23 ha
+   ✅ Total área útil: 1,234.56 km²
+   ✅ Total edificaciones: 5,678,901
+
+2. Verificando archivos CSV...
+   ✅ municipalities_stats.csv: 146 municipios
+   ✅ regional_summary.csv: 14 regiones
+
+3. Verificando GeoJSON...
+   ✅ GeoJSON existe: 2.3 MB
+   ✅ Tipo: FeatureCollection
+   ✅ Features: 146
+   ✅ Campos requeridos presentes
+
+4. Verificando scripts...
+   ✅ 01_calculate_solar_area.py
+   ✅ 02_generate_statistics.py
+   ✅ 03_regional_summary.py
+   ✅ 04_export_geojson.py
+
+5. Verificando documentación...
+   ✅ README.md (12.4 KB)
+   ✅ METODOLOGIA.md (8.7 KB)
+   ✅ REPORTE_FINAL_ENTREGABLE_4.md (15.2 KB)
+
+======================================================================
+RESUMEN DE VALIDACIÓN
+======================================================================
+✅ ✅ ✅ DELIVERABLE 4 COMPLETADO AL 100% ✅ ✅ ✅
+
+Todos los requisitos cumplidos:
+  ✅ Conteo de Techos y Estimación de Área
+  ✅ Reproducibilidad y Metodología
+  ✅ Precisión de Operaciones Espaciales
+  ✅ Estructura de Datos de Salida
+```
+
+---
+
+## 📁 Estructura de Archivos
+```
+deliverables/deliverable_4/
+├── scripts/
+│   ├── 01_calculate_solar_area.py
+│   ├── 02_generate_statistics.py
+│   ├── 03_regional_summary.py      # ← Script 1
+│   ├── 04_export_geojson.py        # ← Script 2
+│   └── validate.py                 # ← Script 3
+├── outputs/
+│   ├── tables/
+│   │   ├── municipalities_stats.csv
+│   │   └── regional_summary.csv
+│   └── geojson/
+│       └── municipalities_with_stats.geojson
+├── README.md
+├── METODOLOGIA.md
+└── REPORTE_FINAL_ENTREGABLE_4.md
+```
+
+---
+
+## 🔗 Dependencias
+
+### Requisitos Python
+```
+pandas
+pymongo
+logging (built-in)
+json (built-in)
+pathlib (built-in)
+```
+
+### Base de Datos
+- MongoDB con las colecciones:
+  - `buildings_by_municipality`
+  - `pdet_municipalities`
+
+---
+
+## 🎯 Flujo de Trabajo Recomendado
+
+1. **Ejecutar análisis regional**
+```bash
+   python 03_regional_summary.py
+```
+
+2. **Exportar datos geoespaciales**
+```bash
+   python 04_export_geojson.py
+```
+
+3. **Validar resultados**
+```bash
+   python validate.py
+```
+
+---
+
+## 📊 Métricas Clave
+
+| Métrica | Valor Esperado |
+|---------|----------------|
+| Municipios PDET | 146 |
+| Regiones PDET | 14 |
+| Features GeoJSON | 146 |
+| Fuentes de datos | 2 (Microsoft, Google) |
+
+---
+
+## 👥 Información del Proyecto
+
+- **Equipo**: PDET Solar Analysis
+- **Fecha**: Noviembre 2025
+- **Deliverable**: 4
+- **Objetivo**: Análisis de potencial solar en techos de municipios PDET
+
+---
+
+## 📝 Notas Importantes
+
+- ⚡ MongoDB realiza todas las agregaciones pesadas en el servidor
+- 🗺️ El GeoJSON usa CRS84 (WGS84) para máxima compatibilidad
+- ✅ Ejecutar `validate.py` antes de entregar el deliverable
+- 📏 El factor de área útil aplicado es 0.75 (75% del área total de techo)
+
+---
+
+## 🐛 Solución de Problemas
+
+### Error: "No se puede conectar a MongoDB"
+```bash
+# Verificar que MongoDB esté corriendo
+mongosh --eval "db.version()"
+```
+
+### Error: "Archivo GeoJSON muy grande"
+- El GeoJSON puede ser ~2-3 MB, esto es normal para 146 municipios con geometrías completas
+
+### Error: "Validación falla en campos area_util"
+- Ejecutar primero `01_calculate_solar_area.py` y `02_generate_statistics.py`
+
+---
+
+## 📞 Soporte
+
+Para más información sobre el proyecto PDET Solar Analysis, consultar la documentación completa en el directorio `deliverables/deliverable_4/`.
+Puedes copiar todo este texto y guardarlo como README.md. El formato está listo para usar en cualquier repositorio o documentación del proyecto. 📝ReintentarClaude puede cometer errores. Verifique las respuestas.
