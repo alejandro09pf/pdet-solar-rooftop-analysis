@@ -1,0 +1,306 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\geometry{margin=2.5cm}
+
+\title{\textbf{Deliverable 4: Análisis Geoespacial\\de Potencial Solar en Municipios PDET}}
+\author{
+    Alejandro Pinzón \and Juan José Bermúdez \and Juan Manuel Díaz \and Victor Peñaranda\\
+    \textit{Bases de Datos - Universidad de los Andes}
+}
+\date{17 de Noviembre, 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este documento presenta el análisis geoespacial del potencial solar en 146 municipios PDET de Colombia mediante el procesamiento de 6.08 millones de edificaciones del dataset Microsoft Buildings. Utilizando agregaciones nativas de MongoDB, se calculó el área útil disponible para instalación de paneles solares, aplicando un factor de eficiencia del 47.6\%. Los resultados muestran un potencial de 165.66 km² de área útil distribuida en 14 regiones PDET, con Sierra Nevada-Perijá liderando con 30.28 km².
+\end{abstract}
+
+\section{Introducción}
+
+El cuarto entregable del proyecto PDET Solar Rooftop Analysis tiene como objetivo estimar el área útil disponible para la instalación de paneles solares en los techos de edificaciones ubicadas en municipios PDET (Programas de Desarrollo con Enfoque Territorial).
+
+\subsection{Objetivos}
+\begin{itemize}
+    \item Calcular área útil para paneles solares aplicando factores de corrección
+    \item Generar estadísticas descriptivas por municipio y región PDET
+    \item Comparar resultados entre datasets Microsoft y Google Buildings
+    \item Crear visualizaciones interactivas y mapas coropléticos
+    \item Desarrollar un flujo de trabajo completamente reproducible
+\end{itemize}
+
+\section{Metodología}
+
+\subsection{Datos de Entrada}
+\begin{itemize}
+    \item \textbf{Microsoft Buildings}: 6,082,359 edificaciones
+    \item \textbf{Google Open Buildings}: 16,532,667 edificaciones
+    \item \textbf{Municipios PDET}: 146 municipios en 14 regiones
+    \item \textbf{Join Espacial}: Realizado en MongoDB (Deliverable 3)
+\end{itemize}
+
+\subsection{Factor de Eficiencia Solar}
+
+El área útil se calcula aplicando un factor de eficiencia que considera limitaciones físicas y técnicas:
+
+\begin{equation}
+    \text{Factor de Eficiencia} = \text{Orientación} \times \text{Pendiente} \times \text{Obstrucciones}
+\end{equation}
+
+\begin{equation}
+    \text{Factor de Eficiencia} = 0.7 \times 0.8 \times 0.85 = 0.476 \text{ (47.6\%)}
+\end{equation}
+
+\begin{itemize}
+    \item \textbf{Orientación (0.7)}: No todos los techos tienen orientación óptima hacia el sol
+    \item \textbf{Pendiente (0.8)}: Techos muy inclinados reducen el área instalable
+    \item \textbf{Obstrucciones (0.85)}: Chimeneas, antenas, sombras y espacios técnicos
+\end{itemize}
+
+\begin{equation}
+    \text{Área Útil} = \text{Área Total de Techos} \times 0.476
+\end{equation}
+
+\subsection{Procesamiento con MongoDB}
+
+Todo el trabajo pesado se realizó mediante agregaciones nativas de MongoDB, manteniendo consistencia con el join espacial del Deliverable 3.
+
+\textbf{Pipeline de Cálculo de Estadísticas:}
+\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily, breaklines=true]
+pipeline = [
+    {
+        '$addFields': {
+            'ms_density': {
+                '$divide': ['$microsoft.count', '$area_km2']
+            },
+            'ms_coverage': {
+                '$multiply': [
+                    {'$divide': [
+                        '$microsoft.total_area_km2',
+                        '$area_km2'
+                    ]}, 100
+                ]
+            }
+        }
+    },
+    {'$project': {...}},
+    {'$sort': {'pdet_region': 1}}
+]
+\end{lstlisting}
+
+\textbf{Pipeline de Agregación Regional:}
+\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily, breaklines=true]
+pipeline = [
+    {
+        '$group': {
+            '_id': '$pdet_region',
+            'num_municipalities': {'$sum': 1},
+            'ms_total_useful_area_km2': {
+                '$sum': '$microsoft.area_util_km2'
+            },
+            'ms_total_buildings': {
+                '$sum': '$microsoft.count'
+            }
+        }
+    }
+]
+\end{lstlisting}
+
+\section{Resultados}
+
+\subsection{Resultados Generales}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrr}
+\toprule
+\textbf{Métrica} & \textbf{Microsoft} & \textbf{Google} \\
+\midrule
+Total Edificaciones & 6,082,359 & 16,532,667 \\
+Municipios PDET Procesados & 146 & 146 \\
+Área Total de Techos (km²) & 348.03 & 896.89 \\
+\textbf{Área Útil (km²)} & \textbf{165.66} & \textbf{426.96} \\
+Área Útil (hectáreas) & 16,566 & 42,696 \\
+\bottomrule
+\end{tabular}
+\caption{Resumen general de resultados - Microsoft vs Google Buildings}
+\end{table}
+
+\subsection{Top 3 Regiones PDET por Área Útil}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Región PDET} & \textbf{Municipios} & \textbf{Edificaciones} & \textbf{Área Útil (km²)} \\
+\midrule
+Sierra Nevada-Perijá & 15 & 428,743 & 30.28 \\
+Alto Patía y Norte del Cauca & 24 & 373,645 & 25.69 \\
+Cuenca del Caguán y Piedemonte & 17 & 298,456 & 20.71 \\
+\bottomrule
+\end{tabular}
+\caption{Top 3 regiones PDET por área útil para paneles solares (Microsoft)}
+\end{table}
+
+\subsection{Top 5 Municipios por Área Útil}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llrr}
+\toprule
+\textbf{Municipio} & \textbf{Departamento} & \textbf{Edificaciones} & \textbf{Área Útil (km²)} \\
+\midrule
+Santa Marta & Magdalena & 75,961 & 6.73 \\
+Valledupar & Cesar & 62,912 & 5.92 \\
+Cúcuta & Norte de Santander & 36,739 & 4.16 \\
+Florencia & Caquetá & 40,233 & 3.93 \\
+Buenaventura & Valle del Cauca & 35,704 & 3.90 \\
+\bottomrule
+\end{tabular}
+\caption{Top 5 municipios PDET por área útil disponible}
+\end{table}
+
+\subsection{Visualizaciones}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{outputs/charts/regional_distribution.png}
+\caption{Distribución regional del área útil para paneles solares en municipios PDET}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{outputs/charts/top10_municipalities.png}
+\caption{Top 10 municipios por área útil y número de edificaciones}
+\end{figure}
+
+\section{Análisis y Discusión}
+
+\subsection{Comparación Microsoft vs Google}
+
+Los resultados muestran diferencias significativas entre ambos datasets:
+
+\begin{itemize}
+    \item \textbf{Google Buildings} detecta 2.7 veces más edificaciones que Microsoft
+    \item \textbf{Área útil total}: Google estima 426.96 km² vs 165.66 km² de Microsoft
+    \item \textbf{Cobertura}: Google tiene mayor cobertura en áreas rurales
+    \item \textbf{Precisión}: Microsoft tiende a ser más conservador pero preciso
+\end{itemize}
+
+\subsection{Potencial por Región}
+
+Las regiones con mayor potencial solar coinciden con:
+\begin{itemize}
+    \item Alta densidad urbana (Santa Marta, Valledupar)
+    \item Municipios de tamaño medio con buena cobertura
+    \item Regiones con menor densidad de vegetación que permite mejor detección
+\end{itemize}
+
+\section{Aspectos Técnicos}
+
+\subsection{Arquitectura de Procesamiento}
+
+\begin{enumerate}
+    \item \textbf{MongoDB}: Base de datos geoespacial con índices 2dsphere
+    \item \textbf{Agregaciones}: Todas las métricas calculadas en el servidor
+    \item \textbf{Escalabilidad}: Procesamiento de 6M+ documentos en minutos
+    \item \textbf{Reproducibilidad}: Scripts documentados y parametrizables
+\end{enumerate}
+
+\subsection{Estructura de Salida}
+
+Los resultados se exportan en múltiples formatos:
+\begin{itemize}
+    \item \textbf{CSV}: Tablas con estadísticas por municipio y región
+    \item \textbf{GeoJSON}: Datos geoespaciales con propiedades calculadas (127 MB)
+    \item \textbf{HTML}: Mapas interactivos coropléticos con Folium
+    \item \textbf{PNG}: Gráficos estadísticos de alta resolución (300 DPI)
+\end{itemize}
+
+\section{Conclusiones}
+
+\begin{enumerate}
+    \item Se identificó un potencial de \textbf{165.66 km²} de área útil para paneles solares en municipios PDET usando datos de Microsoft Buildings
+
+    \item Las 3 regiones prioritarias (Sierra Nevada-Perijá, Alto Patía, Cuenca del Caguán) concentran el \textbf{46.3\%} del área útil total
+
+    \item El uso de \textbf{agregaciones nativas de MongoDB} permitió procesar 6M+ edificaciones eficientemente, manteniendo consistencia con el Deliverable 3
+
+    \item El factor de eficiencia del \textbf{47.6\%} es conservador y representa estimaciones realistas considerando limitaciones técnicas
+
+    \item La diferencia entre Microsoft y Google Buildings (2.7x) sugiere la importancia de usar múltiples fuentes para análisis completo
+
+    \item El flujo de trabajo es completamente \textbf{reproducible} mediante scripts documentados
+\end{enumerate}
+
+\section{Archivos Entregables}
+
+\subsection{Scripts de Procesamiento}
+\begin{itemize}
+    \item \texttt{01\_calculate\_solar\_area.py}: Cálculo de área útil
+    \item \texttt{02\_generate\_statistics.py}: Estadísticas por municipio (MongoDB)
+    \item \texttt{03\_regional\_summary.py}: Resumen regional (MongoDB \$group)
+    \item \texttt{04\_export\_geojson.py}: Exportación geoespacial
+    \item \texttt{05\_generate\_visualizations.py}: Mapas y gráficos
+\end{itemize}
+
+\subsection{Resultados}
+\begin{itemize}
+    \item \texttt{municipalities\_stats.csv}: 146 municipios con 23 métricas
+    \item \texttt{regional\_summary.csv}: 14 regiones PDET agregadas
+    \item \texttt{municipalities\_with\_stats.geojson}: Datos geoespaciales completos
+    \item Mapas HTML interactivos (disponibles en Google Drive)
+    \item Gráficos PNG de distribución y ranking
+\end{itemize}
+
+\subsection{Documentación}
+\begin{itemize}
+    \item \texttt{METODOLOGIA.md}: Metodología detallada
+    \item \texttt{REPORTE\_FINAL\_ENTREGABLE\_4.md}: Reporte completo
+    \item \texttt{README.md}: Guía de ejecución
+\end{itemize}
+
+\section{Repositorio y Recursos Online}
+
+\subsection{Repositorio GitHub}
+El código fuente completo, scripts y documentación están disponibles en:
+
+\begin{center}
+\url{https://github.com/alejandro09pf/pdet-solar-rooftop-analysis.git}
+\end{center}
+
+\subsection{Archivos Pesados (Google Drive)}
+Debido al tamaño de los archivos HTML (mapas interactivos) y GeoJSON (127 MB), estos están disponibles en Google Drive:
+
+\begin{center}
+\url{https://drive.google.com/drive/folders/1ynvqUUXz0ho_PpTFs4OULaiDVIhjabqw?usp=sharing}
+\end{center}
+
+\textbf{Contenido en Google Drive:}
+\begin{itemize}
+    \item \texttt{area\_util\_choropleth.html} (106 MB) - Mapa coroplético de área útil solar
+    \item \texttt{density\_choropleth.html} (106 MB) - Mapa coroplético de densidad de edificaciones
+    \item \texttt{municipalities\_with\_stats.geojson} (127 MB) - Datos geoespaciales completos
+\end{itemize}
+
+\section{Referencias}
+
+\begin{itemize}
+    \item Microsoft Building Footprints: \url{https://github.com/microsoft/GlobalMLBuildingFootprints}
+    \item Google Open Buildings: \url{https://sites.research.google/open-buildings/}
+    \item MongoDB Geospatial Queries: \url{https://www.mongodb.com/docs/manual/geospatial-queries/}
+    \item Municipios PDET: Agencia de Renovación del Territorio (ART)
+\end{itemize}
+
+\end{document}
