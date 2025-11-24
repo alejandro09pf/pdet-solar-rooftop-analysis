@@ -85,20 +85,22 @@ pdet-solar-rooftop-analysis/
 - ⏳ Eficiencia de Carga de Datos
 - ⏳ Auditoría Inicial de Datos (EDA)
 
-### Entregable 4 - 17 de Noviembre, 2:00 PM
+### Entregable 4 - 17 de Noviembre, 2:00 PM ✅
 **Flujo de Trabajo de Análisis Geoespacial Reproducible**
-- Conteo de Techos y Estimación de Área
-- Reproducibilidad y Metodología
-- Precisión de Operaciones Espaciales
-- Estructura de Datos de Salida (tablas y mapas)
+- ✅ Conteo de Techos y Estimación de Área
+- ✅ Reproducibilidad y Metodología
+- ✅ Precisión de Operaciones Espaciales
+- ✅ Estructura de Datos de Salida (tablas y mapas)
+- **Resultado:** 151.13 km² de área útil en 145 municipios PDET
 
-### Entregable 5 - 24 de Noviembre, 2:00 PM
+### Entregable 5 - 24 de Noviembre, 2:00 PM ✅
 **Reporte Técnico Final y Recomendaciones**
-- Documentación Completa
-- Resultados y Visualizaciones
-- Contenido y Completitud
-- Claridad de las Recomendaciones
-- Alineación con los Objetivos de UPME
+- ✅ Documentación Completa
+- ✅ Resultados y Visualizaciones
+- ✅ Contenido y Completitud
+- ✅ Claridad de las Recomendaciones
+- ✅ Alineación con los Objetivos de UPME
+- **Resultado:** Reporte técnico completo con 5 municipios prioritarios identificados
 
 ## Stack Tecnológico
 
@@ -108,6 +110,48 @@ pdet-solar-rooftop-analysis/
 - **MongoDB**: PyMongo
 - **Procesamiento de Datos**: Pandas, NumPy
 - **Visualización**: Matplotlib, Seaborn, Folium, Plotly
+
+## Resultados Principales
+
+### Potencial Solar Identificado
+
+**Área útil total para paneles solares: 151.13 km² (15,113 hectáreas)**
+- Equivalente a ~21,158 campos de fútbol
+- Distribuido en 145 municipios PDET
+- Basado en 2,399,273 edificaciones (Microsoft Buildings)
+
+### Top 5 Municipios Prioritarios
+
+| # | Municipio | Departamento | Área Útil (km²) | Edificaciones |
+|---|-----------|--------------|-----------------|---------------|
+| 1 | **Santa Marta** | Magdalena | 6.73 | 75,961 |
+| 2 | **Valledupar** | Cesar | 5.92 | 62,912 |
+| 3 | **Florencia** | Caquetá | 3.95 | 40,233 |
+| 4 | **San Vicente del Caguán** | Caquetá | 3.88 | 55,995 |
+| 5 | **Montelíbano** | Córdoba | 2.82 | 43,248 |
+
+### Top 3 Regiones PDET
+
+| Región | Municipios | Área Útil (km²) | % del Total |
+|--------|------------|-----------------|-------------|
+| **Sierra Nevada-Perijá** | 15 | 30.28 | 20.0% |
+| **Alto Patía y Norte del Cauca** | 24 | 25.69 | 17.0% |
+| **Cuenca del Caguán y Piedemonte** | 17 | 20.71 | 13.7% |
+
+**Las top 3 regiones concentran el 50.7% del potencial solar total de territorios PDET.**
+
+### Comparación de Datasets
+
+| Métrica | Microsoft Buildings | Google Open Buildings |
+|---------|---------------------|----------------------|
+| Edificaciones en PDET | 2,399,273 | 2,512,484 |
+| Cobertura municipal | 99.3% (145/146) | 68.5% (100/146) |
+| Área total calculada | 317.50 km² | No disponible |
+| **Área útil** | **151.13 km²** | No disponible |
+
+**Recomendación:** Microsoft Buildings es la fuente preferida para estimaciones de área útil debido a su mejor cobertura y disponibilidad de áreas calculadas.
+
+---
 
 ## Primeros Pasos
 
